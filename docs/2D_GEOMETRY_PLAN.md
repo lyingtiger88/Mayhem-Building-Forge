@@ -85,6 +85,22 @@ Schema/generator versions, footprint polygon, room polygons, classified walls an
 5. Record adjacent room IDs and exact shared length.
 6. Check boundary-length and shared-interface consistency.
 
+
+## 4.1 Functional room roles and adjacency-aware layout (implemented first slice)
+
+Room specifications may declare a semantic `RoomRole`: `Living`, `Kitchen`, `Bedroom`, `Bathroom`, `Hallway`, generic `Public`, `Private`, `Service`, or `Circulation`. `Auto` infers common roles from English room names; explicit roles take precedence. Unrecognized names remain neutral rather than receiving invented semantics.
+
+The current rectangular layout planner searches deterministic guillotine-partition candidates and scores them using:
+- preferred living–kitchen and living–hallway adjacency;
+- hallway access to bedrooms and bathrooms;
+- a preference for bedrooms on the building perimeter;
+- a penalty for direct living–bathroom adjacency;
+- living/hallway centrality and room aspect-ratio quality.
+
+For small briefs (up to seven rooms), the planner evaluates permutations and cut orientations exhaustively. Larger briefs use a bounded deterministic seeded candidate search. The selected result preserves room IDs and returns rooms in input order.
+
+These are configurable design heuristics, not universal architectural rules. They are a starting residential profile; future building typologies must supply their own role and adjacency profiles. Adjacency is not yet a door/access graph: a shared boundary does not by itself prove usable circulation. No building-code or structural compliance is implied.
+
 ## 5. Walls, doors, windows, and circulation
 
 ### Walls
