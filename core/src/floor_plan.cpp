@@ -44,6 +44,19 @@ ValidationResult validate_floor_plan(const FloorPlan&p){
     case EntranceSide::East:on_side=std::abs(p.entrance.start_x-p.width_m)<eps&&std::abs(p.entrance.end_x-p.width_m)<eps&&std::abs(b.x+b.width-p.width_m)<eps;break;
    }
    if(!on_side)fail("Entrance segment must lie on the selected exterior side and touch its host room.");
+   const double segment_length=(p.entrance.side==EntranceSide::South||p.entrance.side==EntranceSide::North)
+      ? std::abs(p.entrance.end_x-p.entrance.start_x)
+      : std::abs(p.entrance.end_y-p.entrance.start_y);
+   const double low=(p.entrance.side==EntranceSide::South||p.entrance.side==EntranceSide::North)
+      ? std::min(p.entrance.start_x,p.entrance.end_x)
+      : std::min(p.entrance.start_y,p.entrance.end_y);
+   const double high=(p.entrance.side==EntranceSide::South||p.entrance.side==EntranceSide::North)
+      ? std::max(p.entrance.start_x,p.entrance.end_x)
+      : std::max(p.entrance.start_y,p.entrance.end_y);
+   const double room_low=(p.entrance.side==EntranceSide::South||p.entrance.side==EntranceSide::North)?b.x:b.y;
+   const double room_high=(p.entrance.side==EntranceSide::South||p.entrance.side==EntranceSide::North)?b.x+b.width:b.y+b.height;
+   if(low<room_low-eps||high>room_high+eps||std::abs(segment_length-p.entrance.clear_width_m)>eps)
+    fail("Entrance segment must fit within its host room boundary and match its clear width.");
   }
  }
  for(const auto&link:p.circulation_links){
