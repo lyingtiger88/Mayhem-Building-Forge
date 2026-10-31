@@ -33,6 +33,22 @@ struct BoundarySegment2D {
     RoomId room_b{};
 };
 
+enum class WallJunctionKind2D { Endpoint, Straight, Corner, Tee, Cross, Complex };
+
+struct WallNode2D {
+    std::uint64_t id{};
+    Point2 position;
+    WallJunctionKind2D kind{WallJunctionKind2D::Endpoint};
+    std::vector<std::uint64_t> connected_wall_ids;
+};
+
+struct WallTopology2D {
+    std::vector<BoundarySegment2D> walls;
+    std::vector<WallNode2D> junctions;
+    bool valid{true};
+    std::vector<std::string> diagnostics;
+};
+
 struct RoomGeometry2D {
     RoomId id{};
     std::string name;
@@ -56,7 +72,7 @@ struct Geometry2DResult {
 };
 
 [[nodiscard]] Geometry2DResult build_geometry_2d(const FloorPlan& plan);
-[[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
+[[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);\n[[nodiscard]] WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
