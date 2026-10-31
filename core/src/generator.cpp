@@ -276,6 +276,7 @@ FloorPlan FloorPlanGenerator::generate_residential_layout(
             // that misses any required relationship is rejected outright.
             if (!adjacent(candidate, living, kitchen) ||
                 !adjacent(candidate, living, hallway) ||
+                !adjacent(candidate, hallway, kitchen) ||
                 !adjacent(candidate, hallway, bedroom) ||
                 !adjacent(candidate, hallway, bathroom) ||
                 !touches_entrance_side(candidate.rooms[hallway].bounds)) return;
