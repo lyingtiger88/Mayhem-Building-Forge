@@ -29,14 +29,14 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: Planned / next implementation target**
+**Status: In progress — first polygon and SVG slice implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
 - [ ] Canonical 2D coordinate system in metres, with explicit origin and axis conventions.
 - [ ] Polygon, ring, line-segment, and opening data types in the engine-neutral model.
-- [ ] Convert grid-grown rooms into clean polygon boundaries.
-- [ ] Convert treemap rectangles into the same canonical polygon representation.
+- [x] Convert grid-grown rooms into clean polygon boundaries.
+- [x] Convert treemap rectangles into the same canonical polygon representation.
 - [ ] Merge collinear edges and remove duplicate or zero-length segments.
 - [ ] Classify boundaries as exterior walls, shared internal walls, or open circulation boundaries.
 - [ ] Calculate shared wall lengths and preserve room-to-wall relationships.
@@ -45,12 +45,12 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [ ] Generate window candidates only on exterior boundaries.
 - [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
 - [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
-- [ ] Export a human-readable 2D debug drawing (SVG or equivalent).
+- [x] Export a human-readable 2D debug drawing (SVG; first visual-debug version).
 - [ ] Add deterministic and property-based tests for geometry edge cases.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+Current implementation includes room polygon extraction for grid and treemap plans, area-conservation checks, and SVG export. Wall classification, openings, circulation, and stronger topology validation remain planned. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
