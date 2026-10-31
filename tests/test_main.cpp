@@ -132,6 +132,47 @@ void residential_layout(){
 }
 
 
+
+void residential_variations(){
+ using namespace mbf;
+ ResidentialLayoutSettings settings;
+ settings.width_m=12.0;settings.depth_m=9.0;settings.seed=20261031;
+ const auto variations=generate_residential_variations(settings);
+ req(variations.size()==3U,"all three residential profiles produce valid candidates");
+ std::vector<ResidentialLayoutProfile> profiles;
+ for(const auto&candidate:variations) {
+  profiles.push_back(candidate.profile);
+  req(candidate.validation.valid,"every returned variation passes architectural validation");
+  req(candidate.validation.quality_score>0.0,"every valid variation has a positive quality score");
+  req(validate_residential_layout(candidate.layout).valid,"every variation passes geometric validation");
+  req(candidate.layout.profile==candidate.profile,"candidate and layout profile metadata agree");
+  req(candidate.layout.seed!=settings.seed||candidate.profile==ResidentialLayoutProfile::BalancedConventional,
+      "non-baseline profiles receive reproducible derived seeds");
+ }
+ std::sort(profiles.begin(),profiles.end(),[](auto a,auto b){return static_cast<int>(a)<static_cast<int>(b);});
+ req(profiles[0]==ResidentialLayoutProfile::BalancedConventional&&
+     profiles[1]==ResidentialLayoutProfile::OpenLiving&&
+     profiles[2]==ResidentialLayoutProfile::PrivacyFirst,
+     "variation set contains the three named design profiles");
+ const auto&balanced=variations[0].layout;
+ bool geometry_differs=false;
+ for(const auto&candidate:variations) {
+  if(candidate.profile==ResidentialLayoutProfile::BalancedConventional)continue;
+  for(std::size_t i=0;i<balanced.rooms.size()&&i<candidate.layout.rooms.size();++i)
+   if(std::abs(balanced.rooms[i].area_m2-candidate.layout.rooms[i].area_m2)>1e-6)
+    geometry_differs=true;
+ }
+ req(geometry_differs,"profiles change actual room geometry and areas");
+ const auto repeat=generate_residential_variations(settings);
+ req(repeat.size()==variations.size(),"variation generation is deterministic in candidate count");
+ for(std::size_t i=0;i<repeat.size();++i) {
+  req(repeat[i].profile==variations[i].profile,"candidate ranking is deterministic");
+  req(std::abs(repeat[i].validation.quality_score-variations[i].validation.quality_score)<1e-9,
+      "candidate scores are deterministic");
+ }
+ req(std::string(residential_profile_name(ResidentialLayoutProfile::OpenLiving))=="Open Living",
+     "profile names are human-readable");
+}
 void architectural_validation(){
  using namespace mbf;
  ResidentialLayoutSettings settings;settings.width_m=12;settings.depth_m=9;settings.seed=77;
@@ -326,4 +367,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();residential_layout();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();residential_layout();residential_variations();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
