@@ -104,6 +104,55 @@ void polygon_engine(){
  req(std::abs(center.x-2.0)<1e-9&&std::abs(center.y-1.5)<1e-9,"rectangle centroid is correct");
 }
 
+
+void robust_polygon_geometry(){
+ using namespace mbf;
+ const Polygon2D concave{{{0,0},{4,0},{4,1},{1,1},{1,4},{0,4}}};
+ const auto notch=make_rectangle(1,1,3,3);
+ req(std::abs(polygon_intersection_area(concave,notch))<1e-8,
+     "concave bounding boxes may overlap without polygon-area overlap");
+ const auto crossing=make_rectangle(0.5,0.5,2,2);
+ req(std::abs(polygon_intersection_area(concave,crossing)-1.75)<1e-7,
+     "concave overlap computes actual nonzero area");
+ const auto containment=make_rectangle(0.1,0.1,0.4,0.4);
+ req(std::abs(polygon_intersection_area(concave,containment)-0.16)<1e-7,
+     "fully contained polygon intersection is correct");
+
+ ResidentialLayout2D tile;tile.width_m=4;tile.depth_m=4;
+ auto make_room=[](RoomId id,const char* name,Polygon2D p){
+  const double area=polygon_area(p);
+  return PlannedRoom{id,name,RoomRole::Auto,std::move(p),area};
+ };
+ tile.rooms.push_back(make_room(0,"L",concave));
+ tile.rooms.push_back(make_room(1,"NotchLeft",make_rectangle(1,1,1.5,3)));
+ tile.rooms.push_back(make_room(2,"NotchRight",make_rectangle(2.5,1,1.5,3)));
+ req(validate_residential_layout(tile).valid,
+     "concave room and two rectangles tile footprint without overlapping");
+ auto overlap=tile;
+ overlap.rooms[1].footprint=make_rectangle(0.9,1,1.6,3);
+ overlap.rooms[1].area_m2=polygon_area(overlap.rooms[1].footprint);
+ req(!validate_residential_layout(overlap).valid,
+     "real positive-area room overlap is rejected");
+ auto gap=tile;
+ gap.rooms[1].footprint=make_rectangle(1.1,1,1.4,3);
+ gap.rooms[1].area_m2=polygon_area(gap.rooms[1].footprint);
+ req(!validate_residential_layout(gap).valid,
+     "uncovered gap within footprint is rejected");
+
+ // Deterministic rectangle regression sweep; boundaries and containment
+ // must agree with exact analytical intersection for many coordinates.
+ for(int i=0;i<100;++i) {
+  const double x=static_cast<double>((i*17)%29)*0.1-0.6;
+  const double y=static_cast<double>((i*11)%31)*0.1-0.6;
+  const double w=0.3+static_cast<double>((i*7)%9)*0.14;
+  const double h=0.4+static_cast<double>((i*13)%7)*0.17;
+  const auto a=make_rectangle(0,0,2,2),b=make_rectangle(x,y,w,h);
+  const double expected=std::max(0.0,std::min(2.0,x+w)-std::max(0.0,x))*
+                        std::max(0.0,std::min(2.0,y+h)-std::max(0.0,y));
+  req(std::abs(polygon_intersection_area(a,b)-expected)<1e-7,
+      "polygon intersection agrees with analytical rectangle overlap");
+ }
+}
 void residential_layout(){
  using namespace mbf;
  ResidentialLayoutSettings s;s.width_m=12;s.depth_m=9;s.seed=20261031;
@@ -368,4 +417,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();residential_layout();residential_variations();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();robust_polygon_geometry();residential_layout();residential_variations();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
