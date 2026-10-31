@@ -42,8 +42,43 @@ struct WallNode2D {
     std::vector<std::uint64_t> connected_wall_ids;
 };
 
+enum class OpeningKind2D { EntranceDoor, InteriorDoor, Window, OpenPlan };
+
+struct WallOpening2D {
+    std::uint64_t id{};
+    std::uint64_t wall_id{};
+    OpeningKind2D kind{OpeningKind2D::InteriorDoor};
+    double offset_m{};
+    double width_m{};
+    double height_m{2.1};
+    double sill_height_m{};
+    RoomId room_a{};
+    RoomId room_b{};
+};
+
+struct WallPiece2D {
+    std::uint64_t id{};
+    std::uint64_t source_wall_id{};
+    Point2 start;
+    Point2 end;
+    double length_m{};
+    bool opening_gap{false};
+};
+
+struct OpeningSettings2D {
+    double entrance_width_m{1.0};
+    double interior_door_width_m{0.9};
+    double window_width_m{1.2};
+    double minimum_end_clearance_m{0.15};
+    double door_height_m{2.1};
+    double window_height_m{1.2};
+    double window_sill_height_m{0.9};
+};
+
 struct WallTopology2D {
     std::vector<BoundarySegment2D> walls;
+    std::vector<WallOpening2D> openings;
+    std::vector<WallPiece2D> wall_pieces;
     std::vector<WallNode2D> junctions;
     bool valid{true};
     std::vector<std::string> diagnostics;
@@ -74,6 +109,15 @@ struct Geometry2DResult {
 [[nodiscard]] Geometry2DResult build_geometry_2d(const FloorPlan& plan);
 [[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
 [[nodiscard]] WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
+[[nodiscard]] bool add_wall_opening(WallTopology2D& topology, std::uint64_t wall_id,
+                                    OpeningKind2D kind, double offset_m, double width_m,
+                                    const OpeningSettings2D& settings = {},
+                                    std::string* error = nullptr,
+                                    double tolerance = 1e-7);
+void rebuild_wall_pieces(WallTopology2D& topology, double tolerance = 1e-7);
+[[nodiscard]] std::vector<std::uint64_t> generate_default_openings(
+    WallTopology2D& topology, const Entrance2D& entrance,
+    const OpeningSettings2D& settings = {});
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
