@@ -6,7 +6,7 @@ Mayhem Building Forge (MBF) is planned as a hybrid desktop authoring tool and Un
 
 > **Status: Early foundation / pre-alpha.** The repository currently contains an initial C++20 floor-plan core with grid-growth and weighted rectangular subdivision algorithms. The desktop interface, 3D pipeline, furnishing system, and Unreal integration are not implemented yet.
 
-[Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Getting Started](docs/GETTING_STARTED.md) · [User Guide](docs/USER_GUIDE.md) · [Reference Analysis](docs/REFERENCE_ANALYSIS.md) · [Contributing](CONTRIBUTING.md)
+[Documentation Index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Getting Started](docs/GETTING_STARTED.md) · [User Guide](docs/USER_GUIDE.md) · [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md) · [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md) · [Reference Analysis](docs/REFERENCE_ANALYSIS.md) · [Contributing](CONTRIBUTING.md)
 
 ---
 
