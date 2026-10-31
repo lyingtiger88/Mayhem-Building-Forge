@@ -16,7 +16,7 @@ int main() {
         {"Hallway", 9.0, mbf::RoomRole::Hallway}
     };
     const mbf::FloorPlanGenerator generator;
-    const auto plan = generator.generate_treemap(settings, rooms);
+    const auto plan = generator.generate_residential_layout(settings, rooms, mbf::EntranceSide::South);
     const auto validation = mbf::validate_floor_plan(plan);
     if (!validation.valid) {
         for (const auto& error : validation.errors) std::cerr << error << '\n';
@@ -32,7 +32,7 @@ int main() {
         std::cerr << export_error << '\n';
         return 3;
     }
-    std::cout << "Mayhem Building Forge - clean 2D floor-plan generated\n"
+    std::cout << "Mayhem Building Forge - topology-first residential plan generated\n"
               << "Footprint: " << settings.width_m << "m x " << settings.depth_m
               << "m | seed: " << plan.seed << '\n';
     for (const auto& room : geometry.geometry.rooms) {
@@ -42,6 +42,8 @@ int main() {
                   << " boundary_loops=" << room.rings.size() << '\n';
     }
     std::cout << "Room adjacencies: " << plan.adjacency.size() << '\n'
+              << "Circulation links: " << plan.circulation_links.size() << '\n'
+              << "South entrance clear width: " << plan.entrance.clear_width_m << " m\n"
               << "SVG exported: mayhem_floor_plan.svg\n";
     return 0;
 }
