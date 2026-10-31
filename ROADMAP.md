@@ -68,7 +68,9 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Replace axis-aligned bounding-box overlap checks with triangulation-based positive-area intersection tests for valid simple concave/convex room polygons; check coverage by no-overlap plus summed area inside a rectangular envelope.
 - [x] Add generic polygon-region contract with a simple concave outer boundary and zero or more interior holes.
 - [x] Validate room partitions against L-shaped and U-shaped envelopes, courtyard voids, outside parts, overlap, and uncovered area.
-- [ ] Add polygon offsetting/inset operations for wall thickness and buildable setbacks; improve numerical robustness for near-collinear and complex polygons.
+- [x] Add miter-based polygon offset/inset operations with winding support, output validation, and configurable miter limits.
+- [x] Add uniform lot setback calculation and buildable-area reporting for valid simple polygon lots.
+- [ ] Add robust concave offset cleanup, round/bevel joins, and per-edge/front-side setbacks; support courtyard wall offsets and narrow-neck collapse handling.
 - [x] Add deterministic residential profiles and generate multiple architecturally validated candidates from one footprint and brief.
 - [ ] Expand profiles into genuinely different room graphs, including optional vestibules and alternative corridor topologies.
 - [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
