@@ -1,16 +1,16 @@
 # Mayhem Building Forge — Product Roadmap
 
-This roadmap is the delivery plan. It separates implemented work from targets so planned features are never mistaken for existing capabilities.
+This roadmap distinguishes implemented code from planned capabilities. A feature is not complete merely because its data type or interface exists: each milestone has testable exit criteria.
 
 **Status legend:** Done · In progress · Planned · Future
 
 ## Product direction
 
-- Desktop authoring application and Unreal Engine integration.
-- Full building interiors.
-- Hybrid procedural generation: architectural rules + geometry algorithms + curated asset libraries.
-- Large-environment readiness through instancing, baking, LOD/HLOD, and streaming.
-- Multiplayer is deliberately deferred until single-player generation and the data model are stable.
+- Both a standalone desktop authoring application and Unreal Engine integration.
+- Complete building interiors, not exterior shells only.
+- Hybrid generation: architectural rules, geometric algorithms, and curated asset libraries.
+- Large-environment readiness through offline baking, instancing, LOD/HLOD, and streaming.
+- Multiplayer is deferred until single-player generation and the building model are stable.
 
 ## Milestone 0 — Repository and core foundation
 **Status: Implemented (initial baseline)**
@@ -20,28 +20,37 @@ This roadmap is the delivery plan. It separates implemented work from targets so
 - [x] Deterministic seed input.
 - [x] Grid-growth floor-plan generator.
 - [x] Weighted rectangular / treemap generator.
-- [x] Room geometry, area, cell ownership, and adjacency output.
-- [x] Basic validation and automated regression tests.
+- [x] Room regions, areas, bounds, cell ownership, and adjacency output.
+- [x] Basic validation and regression tests.
 - [x] GitHub Actions build-and-test workflow.
 - [x] Research reference analysis and attribution.
+- [x] README, architecture, getting-started, user guide, and roadmap.
 
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
-## Milestone 1 — Architectural floor-plan intelligence
-**Status: Planned / next priority**
+## Milestone 1 — 2D architectural geometry
+**Status: Planned / next implementation target**
 
-- [ ] Stable room and building typology schema.
-- [ ] Explicit grid dimensions and coordinate mapping in serialized output.
-- [ ] Shared-boundary measurements, not only edge counts.
-- [ ] Circulation graph: entrance, corridor, room access, vertical core.
-- [ ] Door candidates with clear-width and wall constraints.
-- [ ] Window candidates from exterior-facing boundaries.
-- [ ] Connectivity validation: no inaccessible rooms or isolated circulation components.
-- [ ] Room minimum-area and aspect-ratio constraints.
-- [ ] Candidate scoring and actionable generation diagnostics.
-- [ ] Randomized regression and property-based tests.
+This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
-**Exit criteria:** Every accepted plan passes geometric coverage, connectivity, access, and configured dimensional constraints.
+- [ ] Canonical 2D coordinate system in metres, with explicit origin and axis conventions.
+- [ ] Polygon, ring, line-segment, and opening data types in the engine-neutral model.
+- [ ] Convert grid-grown rooms into clean polygon boundaries.
+- [ ] Convert treemap rectangles into the same canonical polygon representation.
+- [ ] Merge collinear edges and remove duplicate or zero-length segments.
+- [ ] Classify boundaries as exterior walls, shared internal walls, or open circulation boundaries.
+- [ ] Calculate shared wall lengths and preserve room-to-wall relationships.
+- [ ] Define building entrance, corridors, room access, and circulation graph.
+- [ ] Generate door candidates on valid shared boundaries and validate clear widths.
+- [ ] Generate window candidates only on exterior boundaries.
+- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
+- [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
+- [ ] Export a human-readable 2D debug drawing (SVG or equivalent).
+- [ ] Add deterministic and property-based tests for geometry edge cases.
+
+**Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
+
+Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
@@ -53,19 +62,24 @@ This roadmap is the delivery plan. It separates implemented work from targets so
 - [ ] Inter-floor circulation validation.
 - [ ] Building-level data contract and versioning.
 
-**Exit criteria:** Multi-floor buildings have aligned floor plates and valid vertical circulation.
+**Exit criteria:** Multiple floors have aligned floor plates and valid vertical circulation. Each floor uses the canonical 2D geometry model from Milestone 1.
 
-## Milestone 3 — 3D structural generation
+## Milestone 3 — 3D structural geometry
 **Status: Planned**
 
-- [ ] Wall, slab, ceiling, roof, and column generation.
-- [ ] Door and window openings integrated into wall geometry.
-- [ ] Interior/exterior wall thickness and junction handling.
-- [ ] UV/material slots and collision geometry.
-- [ ] Geometry validation and mesh diagnostics.
-- [ ] Deterministic mesh output.
+- [ ] Extrude 2D wall segments into wall meshes with correct thickness and junction handling.
+- [ ] Generate floor slabs, ceilings, roofs, columns, and structural supports.
+- [ ] Create real door and window openings in wall geometry.
+- [ ] Generate reveals, lintels, sills, and frame attachment anchors.
+- [ ] Produce consistent normals, UVs, material slots, and collision geometry.
+- [ ] Preserve room, wall, floor, and opening IDs in mesh metadata.
+- [ ] Validate mesh indices, degenerate triangles, normals, bounds, and opening clearances.
+- [ ] Keep render mesh, collision mesh, and navigation metadata separate.
+- [ ] Add deterministic mesh-generation tests and reference fixtures.
 
-**Exit criteria:** Approved plans produce clean structural meshes with tested openings, collisions, and materials.
+**Exit criteria:** A validated 2D plan can be extruded into a structurally coherent 3D building shell with real openings, stable IDs, and tested geometry. The geometry core has no Unreal dependency.
+
+Detailed specification: [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md).
 
 ## Milestone 4 — Facades and architectural styles
 **Status: Planned**
@@ -76,7 +90,7 @@ This roadmap is the delivery plan. It separates implemented work from targets so
 - [ ] Asset-library metadata and compatibility rules.
 - [ ] Variation controls that preserve structural validity.
 
-**Exit criteria:** Distinct facade variants can be generated without breaking the structure.
+**Exit criteria:** Distinct facade variants can be generated without breaking structural geometry.
 
 ## Milestone 5 — Complete interior generation
 **Status: Planned**
@@ -125,7 +139,7 @@ This roadmap is the delivery plan. It separates implemented work from targets so
 - [ ] Profiling benchmarks and stress tests.
 - [ ] Save-state and regeneration compatibility.
 
-**Exit criteria:** Benchmark scenes meet documented performance and memory targets on reference hardware.
+**Exit criteria:** Benchmark scenes meet documented performance and memory targets.
 
 ## Milestone 9 — Multiplayer and collaboration
 **Status: Future / deferred**
@@ -135,14 +149,13 @@ This roadmap is the delivery plan. It separates implemented work from targets so
 - [ ] Conflict resolution and deterministic regeneration.
 - [ ] Network performance and authority model.
 
-Multiplayer is intentionally not an early milestone. It should be designed after the building data model and generation determinism stabilize.
+Multiplayer is intentionally not an early milestone. It should be designed after determinism and the building data model stabilize.
 
-## Current sprint — Next engineering work
+## Current execution order
 
-1. Harden grid and treemap geometry contracts.
-2. Add shared-boundary measurements and room connectivity tests.
-3. Introduce entrance, corridor, and door constraints.
-4. Add a machine-readable floor-plan export format.
-5. Produce a visual debug renderer for generated 2D plans.
+1. Complete Milestone 1: canonical 2D geometry, walls, openings, circulation, and SVG/debug output.
+2. Complete Milestone 2: multi-floor model and vertical circulation.
+3. Complete Milestone 3: 3D structural geometry generated from the validated 2D model.
+4. Continue with facades and complete interiors.
 
-The sprint is complete only when outputs can be inspected and tested, not merely when code has been committed.
+Do not jump to 3D meshes before the 2D geometry contract and validation are reliable.
