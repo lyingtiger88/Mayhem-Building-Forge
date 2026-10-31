@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — wall topology, openings, circulation reachability, and configurable architectural validation implemented**
+**Status: In progress — wall topology, circulation, architectural validation, and concave-polygon overlap validation implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -62,8 +62,10 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Add architectural quality scoring and warnings for rooms close to configured minimums.
 - [x] Export a human-readable 2D debug drawing (SVG; first visual-debug version).
 - [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.
-- [ ] Add broader property-based tests for geometry edge cases.
-- [ ] Replace axis-aligned bounding-box overlap checks with robust arbitrary-polygon intersection and coverage validation.
+- [x] Add deterministic regression sweeps for 100 rectangle intersection cases, concave containment, edge touching, overlap, and missing footprint coverage.
+- [ ] Add larger property-based and fuzz testing across pathological polygons and floating-point tolerances.
+- [x] Replace axis-aligned bounding-box overlap checks with triangulation-based positive-area intersection tests for valid simple concave/convex room polygons; check coverage by no-overlap plus summed area inside a rectangular envelope.
+- [ ] Add constrained non-rectangular building envelopes and holes; improve numerical robustness for near-collinear and complex polygons.
 - [x] Add deterministic residential profiles and generate multiple architecturally validated candidates from one footprint and brief.
 - [ ] Expand profiles into genuinely different room graphs, including optional vestibules and alternative corridor topologies.
 - [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
