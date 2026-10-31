@@ -64,6 +64,9 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.
 - [ ] Add broader property-based tests for geometry edge cases.
 - [ ] Replace axis-aligned bounding-box overlap checks with robust arbitrary-polygon intersection and coverage validation.
+- [x] Add deterministic residential profiles and generate multiple architecturally validated candidates from one footprint and brief.
+- [ ] Expand profiles into genuinely different room graphs, including optional vestibules and alternative corridor topologies.
+- [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
@@ -233,7 +236,7 @@ Multiplayer is intentionally not an early milestone. It should be designed after
 
 ## Residential variation decision (2026-10-31)
 
-The first balanced south-entry residential layout is accepted as one selectable design variation, not as a universal template. The next residential iteration should introduce a variation/profile interface and generate multiple valid candidates from the same footprint and room brief. Initial profiles: Balanced Conventional (the accepted baseline), Open Living (larger shared public zone), and Privacy First (stronger separation and controlled entry/circulation). Profiles must change actual room topology and openings—not merely colors, labels, or random coordinates. Each candidate must pass polygon validity, footprint coverage, overlap, opening-boundary, and circulation-connectivity checks before it is offered as a variation.
+The first balanced south-entry residential layout is accepted as one selectable design variation, not as a universal template. A first variation/profile API is now implemented. It generates Balanced Conventional (baseline), Open Living (larger public zone and living footprint), and Privacy First (deeper circulation spine and shifted private-zone proportions) candidates from the same footprint and room brief. Candidates are checked with the current polygon, coverage, overlap, opening-boundary, room-dimension, and access-connectivity validators, then sorted by the current geometric quality score. This is an initial zoning-profile variation system, not yet a full room-topology search: the three profiles still use the same five room roles and south-entry circulation concept. A future iteration must add optional vestibules, alternative corridor graphs, room-count briefs, and door-placement/privacy scoring to achieve stronger topological diversity.
 
 ## Current execution order
 
