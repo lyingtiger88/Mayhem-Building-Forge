@@ -13,7 +13,7 @@ int main() {
         {"Bathroom", 7.0}, {"Hallway", 9.0}
     };
     const mbf::FloorPlanGenerator generator;
-    const auto plan = generator.generate_grid_growth(settings, rooms);
+    const auto plan = generator.generate_treemap(settings, rooms);
     const auto validation = mbf::validate_floor_plan(plan);
     if (!validation.valid) {
         for (const auto& error : validation.errors) std::cerr << error << '\n';
@@ -29,7 +29,7 @@ int main() {
         std::cerr << export_error << '\n';
         return 3;
     }
-    std::cout << "Mayhem Building Forge - 2D floor-plan generated\n"
+    std::cout << "Mayhem Building Forge - clean 2D floor-plan generated\n"
               << "Footprint: " << settings.width_m << "m x " << settings.depth_m
               << "m | seed: " << plan.seed << '\n';
     for (const auto& room : geometry.geometry.rooms) {
