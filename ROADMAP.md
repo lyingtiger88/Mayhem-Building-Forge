@@ -120,10 +120,40 @@ Detailed specification: [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md).
 
 **Exit criteria:** A user can create, inspect, edit, regenerate, and export a building without editing source code.
 
+## Dynamic Unreal Blueprint requirement (accepted architecture decision, 2026-10-31)
+
+Buildings must not be delivered to Unreal Engine only as one merged Static Mesh. The integration must create a reusable, editable Blueprint Actor (for example, `BP_MayhemBuilding`) backed by a native C++ runtime base class and structured building data.
+
+Required behavior:
+- Mayhem's authoring/generation side remains the source of truth for building geometry, room IDs, wall/opening definitions, floor data, materials, and variation parameters.
+- Export a versioned, engine-neutral building package (initially JSON plus generated mesh/asset references) with stable IDs and a content hash.
+- An Unreal Editor plugin imports or synchronizes that package and creates/updates a Blueprint child of `AMayhemBuildingActor`; it must preserve the Blueprint asset identity and user-authored settings when regenerating.
+- The Blueprint exposes editable parameters and component groups for floors, walls, doors, windows, roofs, interiors, materials, and collision/navigation settings. Components must retain semantic IDs so individual elements can be selected, replaced, or adjusted.
+- A clear `Apply/Regenerate from Mayhem` workflow updates the Unreal representation when the source plan changes; stale generated components are reconciled by stable ID rather than deleting user-authored content.
+- Support editor-time preview/rebuild and a separate runtime generation path with explicit performance and asset-cooking constraints. Do not assume editor-only asset creation APIs are available in packaged runtime builds.
+- Blueprint Construction Script is appropriate for editor-visible parameter-driven setup; runtime behavior and heavier geometry generation belong in the native C++ Actor/component layer, callable and extendable from Blueprint.
+- Keep an optional baked/optimized representation for shipping, while retaining the editable procedural Blueprint source asset.
+
+Planned integration architecture:
+1. `MayhemBuildingData`: versioned interchange schema independent of Unreal.
+2. `AMayhemBuildingActor`: native C++ base actor exposing Blueprint-readable/editable properties and regeneration functions.
+3. `UMayhemBuildingComponent` family: semantic building parts and generated geometry.
+4. Unreal Editor plugin/importer: create/update Blueprint assets, synchronize data, report validation errors.
+5. Blueprint child template: user-facing dynamic building asset placed in levels.
+6. Bake pipeline: convert generated components to optimized static assets without losing source linkage.
+
+This is a product requirement and architecture decision, not an implemented feature yet. It belongs to Milestone 7; its data contract and stable semantic IDs must be designed before the Unreal plugin is implemented.
+
 ## Milestone 7 — Unreal Engine integration
 **Status: Planned**
 
 - [ ] Unreal plugin module and supported engine-version policy.
+- [ ] Native C++ base actor and semantic procedural component architecture, exposed to Blueprint.
+- [ ] Versioned MayhemBuildingData interchange schema with stable room/wall/opening/floor IDs and content hashes.
+- [ ] Import/sync workflow that creates or updates a reusable Blueprint child while preserving user-authored settings and asset identity.
+- [ ] Blueprint-exposed parameters and Apply/Regenerate-from-Mayhem workflow.
+- [ ] Separate editor-time rebuild and packaged runtime generation paths.
+- [ ] Optional bake-to-optimized-assets workflow with source linkage.
 - [ ] Import/bake workflow for generated building data.
 - [ ] Instanced props and material mapping.
 - [ ] Collision, navigation, LOD/HLOD, and Nanite suitability checks.
