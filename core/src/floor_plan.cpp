@@ -28,6 +28,27 @@ ValidationResult validate_floor_plan(const FloorPlan&p){
  for(const auto&room:p.rooms){if(!ids.insert(room.id).second)fail("Room IDs must be unique.");if(p.algorithm==FloorPlanAlgorithm::GridGrowth&&room.cells.empty())fail("Every grid room must own cells.");if(!(room.actual_area_m2>0))fail("Every room must have positive area.");}
  for(const auto&c:p.cells)if(!ids.contains(c.room_id))fail("A cell references an unknown room ID.");
  for(const auto&e:p.adjacency)if(e.first==e.second||!ids.contains(e.first)||!ids.contains(e.second)||e.shared_edges==0U)fail("Adjacency must connect two distinct existing rooms.");
+ if(p.entrance.defined){
+  if(!ids.contains(p.entrance.room_id))fail("Entrance must reference an existing room.");
+  if(!(p.entrance.clear_width_m>0.0))fail("Entrance clear width must be positive.");
+  const auto room=std::find_if(p.rooms.begin(),p.rooms.end(),[&](const auto&x){return x.id==p.entrance.room_id;});
+  if(room!=p.rooms.end()){
+   constexpr double eps=1e-6;
+   const auto&b=room->bounds;
+   bool on_side=false;
+   switch(p.entrance.side){
+    case EntranceSide::South:on_side=std::abs(p.entrance.start_y)<eps&&std::abs(p.entrance.end_y)<eps&&std::abs(b.y)<eps;break;
+    case EntranceSide::North:on_side=std::abs(p.entrance.start_y-p.depth_m)<eps&&std::abs(p.entrance.end_y-p.depth_m)<eps&&std::abs(b.y+b.height-p.depth_m)<eps;break;
+    case EntranceSide::West:on_side=std::abs(p.entrance.start_x)<eps&&std::abs(p.entrance.end_x)<eps&&std::abs(b.x)<eps;break;
+    case EntranceSide::East:on_side=std::abs(p.entrance.start_x-p.width_m)<eps&&std::abs(p.entrance.end_x-p.width_m)<eps&&std::abs(b.x+b.width-p.width_m)<eps;break;
+   }
+   if(!on_side)fail("Entrance segment must lie on the selected exterior side and touch its host room.");
+  }
+ }
+ for(const auto&link:p.circulation_links){
+  if(!ids.contains(link.from_room)||!ids.contains(link.to_room)||link.from_room==link.to_room||!(link.shared_boundary_m>0.0))
+   fail("Circulation links must reference distinct existing rooms and a positive shared boundary.");
+ }
  if(p.algorithm==FloorPlanAlgorithm::GridGrowth&&p.cells.empty())fail("Grid floor plan has no cells.");
  return r;
 }
