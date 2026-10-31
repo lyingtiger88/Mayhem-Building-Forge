@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — clean rectangular partition and SVG preview implemented**
+**Status: In progress — role-aware spatial layout and SVG preview implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -43,14 +43,14 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [ ] Define building entrance, corridors, room access, and circulation graph.
 - [ ] Generate door candidates on valid shared boundaries and validate clear widths.
 - [ ] Generate window candidates only on exterior boundaries.
-- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
+- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.\n- [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
 - [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
 - [x] Export a human-readable 2D debug drawing (SVG; first visual-debug version).
 - [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.\n- [ ] Add broader property-based tests for geometry edge cases.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-Current sample now uses a deterministic guillotine-style rectangular partition rather than exposing jagged grid-growth regions. It checks room bounds, non-overlap, area conservation, and bounded aspect ratios in regression tests. Grid-growth polygon extraction remains available for internal experiments. Wall classification, openings, circulation, and stronger topology validation remain planned. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+Current sample uses a deterministic candidate-search over rectangular guillotine partitions. Room roles (living, kitchen, bedroom, bathroom, hallway) guide adjacency and placement scoring; the selected plan prioritizes living–kitchen and living–hallway connections, hallway access to bedroom/bathroom, a perimeter bedroom, and avoidance of direct living–bathroom adjacency. Regression tests cover these functional relationships as well as bounds, non-overlap, area conservation, and aspect ratios. Grid-growth polygon extraction remains available for internal experiments. Wall classification, openings, circulation, and stronger topology validation remain planned. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
