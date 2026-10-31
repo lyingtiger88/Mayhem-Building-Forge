@@ -159,9 +159,31 @@ void boundary_classification(){
  req(std::abs(exterior_length-60.0)<1e-5,"exterior wall length equals building perimeter");
  req(shared_count>0U&&shared_length>0.0,"shared room walls are classified");
 }
+
+void edge_normalization(){
+ using namespace mbf;
+ BuildingGeometry2D g;g.width_m=4.0;g.depth_m=2.0;
+ // The right room deliberately stores its shared left edge as two segments.
+ g.rooms.push_back({0,"Left",4.0,{{{{0,0},{2,0},{2,2},{0,2}}}}});
+ g.rooms.push_back({1,"Right",4.0,{{{{2,0},{4,0},{4,2},{2,2},{2,1}}}}});
+ const auto edges=classify_boundaries(g);
+ double exterior=0.0,shared=0.0;std::size_t shared_count=0;
+ for(const auto&e:edges){
+  req(e.length_m>1e-8,"normalized edge has positive length");
+  req(std::abs(std::hypot(e.end.x-e.start.x,e.end.y-e.start.y)-e.length_m)<1e-8,
+      "normalized edge length matches endpoints");
+  if(e.kind==BoundaryKind2D::ExteriorWall)exterior+=e.length_m;
+  else {shared+=e.length_m;++shared_count;
+        req(e.room_a==0U&&e.room_b==1U,"shared wall ownership is canonical");}
+ }
+ req(std::abs(exterior-12.0)<1e-7,"outer perimeter is emitted once");
+ req(std::abs(shared-2.0)<1e-7,"partial collinear shared edges are fully matched");
+ req(shared_count==1U,"split shared edge is merged into one wall segment");
+ req(edges.size()==7U,"normalized two-room rectangle has four outer sides plus shared wall subdivisions only where required");
+}
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();residential_layout();boundary_classification();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();residential_layout();boundary_classification();edge_normalization();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
