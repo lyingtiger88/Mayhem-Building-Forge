@@ -45,9 +45,20 @@ struct ResidentialLayoutSettings {
     std::uint64_t seed{1};
 };
 
+struct ArchitecturalValidationSettings {
+    double minimum_room_area_m2{3.5};
+    double minimum_room_width_m{1.5};
+    double minimum_room_depth_m{1.5};
+    double maximum_room_aspect_ratio{4.5};
+    double minimum_door_clear_width_m{0.8};
+    double tolerance{1e-7};
+};
+
 struct LayoutValidation {
     bool valid{false};
+    double quality_score{0.0};
     std::vector<std::string> errors;
+    std::vector<std::string> warnings;
 };
 
 // First deterministic residential typology: public rooms to the south,
@@ -57,6 +68,9 @@ struct LayoutValidation {
 
 [[nodiscard]] LayoutValidation validate_residential_layout(
     const ResidentialLayout2D& layout, double tolerance = 1e-7);
+[[nodiscard]] LayoutValidation validate_architectural_layout(
+    const ResidentialLayout2D& layout,
+    const ArchitecturalValidationSettings& settings = {});
 
 [[nodiscard]] bool export_residential_layout_svg(
     const ResidentialLayout2D& layout, const std::string& output_path,
