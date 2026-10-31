@@ -84,6 +84,23 @@ struct WallTopology2D {
     std::vector<std::string> diagnostics;
 };
 
+struct RoomAccessLink2D {
+    RoomId from_room{};
+    RoomId to_room{};
+    std::uint64_t opening_id{};
+    double clear_width_m{};
+    OpeningKind2D kind{OpeningKind2D::InteriorDoor};
+    bool is_entrance{false};
+};
+
+struct CirculationGraph2D {
+    std::vector<RoomAccessLink2D> links;
+    std::vector<RoomId> reachable_room_ids;
+    std::vector<RoomId> inaccessible_room_ids;
+    bool valid{true};
+    std::vector<std::string> diagnostics;
+};
+
 struct RoomGeometry2D {
     RoomId id{};
     std::string name;
@@ -115,6 +132,9 @@ struct Geometry2DResult {
                                     std::string* error = nullptr,
                                     double tolerance = 1e-7);
 void rebuild_wall_pieces(WallTopology2D& topology, double tolerance = 1e-7);
+[[nodiscard]] CirculationGraph2D build_circulation_graph(
+    const WallTopology2D& topology, const std::vector<RoomId>& room_ids,
+    double minimum_clear_width_m = 0.8, double tolerance = 1e-7);
 [[nodiscard]] std::vector<std::uint64_t> generate_default_openings(
     WallTopology2D& topology, const Entrance2D& entrance,
     const OpeningSettings2D& settings = {});
