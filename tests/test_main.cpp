@@ -2,6 +2,7 @@
 #include "mbf/generator.hpp"
 #include "mbf/geometry2d.hpp"
 #include "mbf/polygon.hpp"
+#include "mbf/polygon_region.hpp"
 #include "mbf/residential_layout.hpp"
 #include <cmath>
 #include <algorithm>
@@ -81,6 +82,47 @@ void topology_first(){
  req(geometry.geometry.entrance.defined,"canonical geometry preserves entrance");
 }
 
+
+void non_rectangular_regions(){
+ using namespace mbf;
+ const PolygonRegion2D l_shape{Polygon2D{{{0,0},{6,0},{6,2},{2,2},{2,6},{0,6}}},{}};
+ const std::vector<Polygon2D> l_parts{
+  make_rectangle(0,0,6,2),make_rectangle(0,2,2,4)};
+ const auto l_valid=validate_polygon_partition(l_shape,l_parts);
+ req(l_valid.valid,"L-shaped envelope accepts a complete room partition");
+ req(std::abs(l_valid.region_area_m2-20.0)<1e-8,"L-shaped envelope area is correct");
+ auto l_gap=l_parts;l_gap[1]=make_rectangle(0,2,1.8,4);
+ req(!validate_polygon_partition(l_shape,l_gap).valid,"L-shaped envelope detects uncovered notch area");
+ auto l_overlap=l_parts;l_overlap[1]=make_rectangle(1.5,2,2,4);
+ req(!validate_polygon_partition(l_shape,l_overlap).valid,"L-shaped envelope rejects overlapping room polygons");
+
+ const PolygonRegion2D u_shape{Polygon2D{{{0,0},{6,0},{6,6},{4,6},{4,2},{2,2},{2,6},{0,6}}},{}};
+ const std::vector<Polygon2D> u_parts{
+  make_rectangle(0,0,6,2),make_rectangle(0,2,2,4),make_rectangle(4,2,2,4)};
+ req(validate_polygon_partition(u_shape,u_parts).valid,
+     "U-shaped envelope accepts three non-overlapping room regions");
+
+ const PolygonRegion2D courtyard{
+  make_rectangle(0,0,10,10),{make_rectangle(3,3,4,4)}};
+ const std::vector<Polygon2D> courtyard_parts{
+  make_rectangle(0,0,10,3),make_rectangle(0,7,10,3),
+  make_rectangle(0,3,3,4),make_rectangle(7,3,3,4)};
+ const auto courtyard_valid=validate_polygon_partition(courtyard,courtyard_parts);
+ req(courtyard_valid.valid,"courtyard envelope accepts rooms surrounding an interior void");
+ req(std::abs(courtyard_valid.region_area_m2-84.0)<1e-8,
+     "courtyard area is excluded from usable building region");
+ auto courtyard_intrusion=courtyard_parts;
+ courtyard_intrusion[2]=make_rectangle(2.5,3,3.5,4);
+ req(!validate_polygon_partition(courtyard,courtyard_intrusion).valid,
+     "room geometry intruding into courtyard is rejected");
+
+ PolygonRegion2D invalid_hole{make_rectangle(0,0,5,5),{make_rectangle(4,4,2,2)}};
+ req(!validate_polygon_partition(invalid_hole,{make_rectangle(0,0,5,5)}).valid,
+     "hole outside the outer boundary is rejected");
+ PolygonRegion2D touching_hole{make_rectangle(0,0,5,5),{make_rectangle(0,1,1,1)}};
+ req(!validate_polygon_partition(touching_hole,{make_rectangle(0,0,5,5)}).valid,
+     "hole touching the outer boundary is rejected");
+}
 void polygon_engine(){
  using namespace mbf;
  const auto rect=make_rectangle(0,0,4,3);
@@ -452,4 +494,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();non_rectangular_regions();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
