@@ -1,0 +1,280 @@
+#include "mbf/geometry2d.hpp"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+namespace mbf {
+namespace {
+using LatticePoint = std::pair<std::uint32_t, std::uint32_t>;
+struct Edge { LatticePoint from, to; bool used{false}; };
+
+int direction(const Edge& e) {
+    if (e.to.first > e.from.first) return 0;
+    if (e.to.second > e.from.second) return 1;
+    if (e.to.first < e.from.first) return 2;
+    return 3;
+}
+
+int turn_priority(int incoming, int outgoing) {
+    const int turn = (outgoing - incoming + 4) % 4;
+    // At a vertex shared only diagonally, the left-most continuation keeps
+    // edge-connected cell components as separate, deterministic rings.
+    switch (turn) {
+        case 1: return 0;
+        case 0: return 1;
+        case 3: return 2;
+        default: return 3;
+    }
+}
+
+double distance(const Point2& a, const Point2& b) {
+    return std::hypot(a.x - b.x, a.y - b.y);
+}
+
+std::string room_color(RoomId id) {
+    static const char* colors[] = {
+        "#dceafe", "#dcfce7", "#fef3c7", "#fce7f3", "#ede9fe",
+        "#cffafe", "#ffedd5", "#e2e8f0", "#f3e8ff", "#ecfccb"
+    };
+    return colors[id % (sizeof(colors) / sizeof(colors[0]))];
+}
+
+std::vector<Ring2> extract_grid_rings(const FloorPlan& plan, RoomId room_id,
+                                      std::uint32_t cols, std::uint32_t rows,
+                                      const std::vector<RoomId>& owners) {
+    const auto index = [cols](std::uint32_t x, std::uint32_t y) {
+        return static_cast<std::size_t>(y) * cols + x;
+    };
+    const auto belongs = [&](std::uint32_t x, std::uint32_t y) {
+        return owners[index(x, y)] == room_id;
+    };
+
+    std::vector<Edge> edges;
+    for (const auto& cell : plan.cells) {
+        if (cell.room_id != room_id) continue;
+        const auto x = cell.x, y = cell.y;
+        if (y == 0U || !belongs(x, y - 1U)) edges.push_back({{x,y},{x+1U,y},false});
+        if (x + 1U == cols || !belongs(x + 1U, y)) edges.push_back({{x+1U,y},{x+1U,y+1U},false});
+        if (y + 1U == rows || !belongs(x, y + 1U)) edges.push_back({{x+1U,y+1U},{x,y+1U},false});
+        if (x == 0U || !belongs(x - 1U, y)) edges.push_back({{x,y+1U},{x,y},false});
+    }
+
+    std::map<LatticePoint, std::vector<std::size_t>> outgoing;
+    for (std::size_t i = 0; i < edges.size(); ++i) outgoing[edges[i].from].push_back(i);
+
+    const double cell_w = plan.width_m / static_cast<double>(cols);
+    const double cell_h = plan.depth_m / static_cast<double>(rows);
+    std::vector<Ring2> rings;
+
+    for (std::size_t start = 0; start < edges.size(); ++start) {
+        if (edges[start].used) continue;
+        Ring2 ring;
+        std::size_t current = start;
+        const auto first_point = edges[start].from;
+        bool closed = false;
+
+        for (std::size_t guard = 0; guard <= edges.size(); ++guard) {
+            auto& edge = edges[current];
+            if (edge.used) break;
+            edge.used = true;
+            ring.vertices.push_back({static_cast<double>(edge.from.first) * cell_w,
+                                     static_cast<double>(edge.from.second) * cell_h});
+            const auto endpoint = edge.to;
+            if (endpoint == first_point) { closed = true; break; }
+
+            const auto it = outgoing.find(endpoint);
+            if (it == outgoing.end()) break;
+            std::size_t next = edges.size();
+            int best_priority = 99;
+            for (const auto candidate : it->second) {
+                if (edges[candidate].used) continue;
+                const int priority = turn_priority(direction(edge), direction(edges[candidate]));
+                if (priority < best_priority) {
+                    best_priority = priority;
+                    next = candidate;
+                }
+            }
+            if (next == edges.size()) break;
+            current = next;
+        }
+
+        if (closed && ring.vertices.size() >= 3U) {
+            if (ring.signed_area_m2() > 1e-10) rings.push_back(std::move(ring));
+            else if (ring.signed_area_m2() < -1e-10) rings.push_back(std::move(ring));
+        }
+    }
+    return rings;
+}
+
+void append_svg_escape(std::ostringstream& out, const std::string& value) {
+    for (const char c : value) {
+        switch (c) {
+            case '&': out << "&amp;"; break;
+            case '<': out << "&lt;"; break;
+            case '>': out << "&gt;"; break;
+            case '"': out << "&quot;"; break;
+            case '\'': out << "&apos;"; break;
+            default: out << c; break;
+        }
+    }
+}
+} // namespace
+
+double Ring2::signed_area_m2() const noexcept {
+    if (vertices.size() < 3U) return 0.0;
+    double twice_area = 0.0;
+    for (std::size_t i = 0; i < vertices.size(); ++i) {
+        const auto& a = vertices[i];
+        const auto& b = vertices[(i + 1U) % vertices.size()];
+        twice_area += a.x * b.y - b.x * a.y;
+    }
+    return twice_area * 0.5;
+}
+
+Geometry2DResult build_geometry_2d(const FloorPlan& plan) {
+    Geometry2DResult result;
+    result.geometry.width_m = plan.width_m;
+    result.geometry.depth_m = plan.depth_m;
+
+    const auto fail = [&](const std::string& message) {
+        result.valid = false;
+        result.errors.push_back(message);
+    };
+    if (!std::isfinite(plan.width_m) || !std::isfinite(plan.depth_m) ||
+        plan.width_m <= 0.0 || plan.depth_m <= 0.0) {
+        fail("Building dimensions must be finite and positive.");
+        return result;
+    }
+    if (plan.rooms.empty()) {
+        fail("Cannot create 2D geometry without rooms.");
+        return result;
+    }
+
+    if (plan.algorithm == FloorPlanAlgorithm::GridGrowth) {
+        if (plan.cells.empty()) {
+            fail("Grid-based plan contains no cells.");
+            return result;
+        }
+        std::uint32_t cols = 0U, rows = 0U;
+        for (const auto& cell : plan.cells) {
+            cols = std::max(cols, cell.x + 1U);
+            rows = std::max(rows, cell.y + 1U);
+        }
+        std::vector<RoomId> owners(static_cast<std::size_t>(cols) * rows,
+                                   static_cast<RoomId>(-1));
+        for (const auto& cell : plan.cells) {
+            const auto slot = static_cast<std::size_t>(cell.y) * cols + cell.x;
+            if (owners[slot] != static_cast<RoomId>(-1)) {
+                fail("Grid contains duplicate cell coordinates.");
+                return result;
+            }
+            owners[slot] = cell.room_id;
+        }
+        if (std::find(owners.begin(), owners.end(), static_cast<RoomId>(-1)) != owners.end()) {
+            fail("Grid contains uncovered cells.");
+            return result;
+        }
+        for (const auto& room : plan.rooms) {
+            RoomGeometry2D converted{room.id, room.name, 0.0,
+                extract_grid_rings(plan, room.id, cols, rows, owners)};
+            for (const auto& ring : converted.rings)
+                converted.area_m2 += ring.signed_area_m2();
+            if (converted.rings.empty() || converted.area_m2 <= 0.0) {
+                fail("Room " + room.name + " did not produce a valid polygon boundary.");
+                return result;
+            }
+            result.geometry.rooms.push_back(std::move(converted));
+        }
+    } else {
+        for (const auto& room : plan.rooms) {
+            const auto& r = room.bounds;
+            if (!std::isfinite(r.x) || !std::isfinite(r.y) ||
+                !std::isfinite(r.width) || !std::isfinite(r.height) ||
+                r.width <= 0.0 || r.height <= 0.0) {
+                fail("Treemap room " + room.name + " has invalid bounds.");
+                return result;
+            }
+            Ring2 ring{{{r.x,r.y},{r.x+r.width,r.y},
+                        {r.x+r.width,r.y+r.height},{r.x,r.y+r.height}}};
+            result.geometry.rooms.push_back({room.id, room.name, ring.signed_area_m2(), {std::move(ring)}});
+        }
+    }
+
+    double total_area = 0.0;
+    for (const auto& room : result.geometry.rooms) total_area += room.area_m2;
+    const double expected = plan.width_m * plan.depth_m;
+    if (std::abs(total_area - expected) > std::max(1e-6, expected * 1e-6))
+        fail("Generated room polygons do not conserve the building footprint area.");
+    return result;
+}
+
+bool export_geometry_svg(const BuildingGeometry2D& geometry,
+                         const std::string& output_path, std::string* error) {
+    if (geometry.width_m <= 0.0 || geometry.depth_m <= 0.0 ||
+        geometry.rooms.empty() || output_path.empty()) {
+        if (error) *error = "SVG export requires positive dimensions, rooms, and an output path.";
+        return false;
+    }
+    constexpr double margin = 24.0;
+    constexpr double scale = 48.0;
+    const double width = geometry.width_m * scale + margin * 2.0;
+    const double height = geometry.depth_m * scale + margin * 2.0;
+    std::ostringstream svg;
+    svg << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width
+        << "\" height=\"" << height << "\" viewBox=\"0 0 " << width << " " << height << "\">\n"
+        << "<rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n"
+        << "<g transform=\"translate(" << margin << "," << margin + geometry.depth_m * scale
+        << ") scale(" << scale << "," << -scale << ")\">\n";
+    for (const auto& room : geometry.rooms) {
+        svg << "<g fill=\"" << room_color(room.id)
+            << "\" stroke=\"#263238\" stroke-width=\"0.035\" fill-rule=\"evenodd\">\n";
+        for (const auto& ring : room.rings) {
+            if (ring.vertices.size() < 3U) continue;
+            svg << "<path d=\"M " << ring.vertices.front().x << " " << ring.vertices.front().y;
+            for (std::size_t i = 1; i < ring.vertices.size(); ++i)
+                svg << " L " << ring.vertices[i].x << " " << ring.vertices[i].y;
+            svg << " Z\"/>\n";
+        }
+        svg << "</g>\n";
+    }
+    svg << "</g>\n";
+    for (const auto& room : geometry.rooms) {
+        double cx = 0.0, cy = 0.0;
+        for (const auto& ring : room.rings) for (const auto& point : ring.vertices) {
+            cx += point.x; cy += point.y;
+        }
+        std::size_t count = 0;
+        for (const auto& ring : room.rings) count += ring.vertices.size();
+        if (count == 0U) continue;
+        cx /= static_cast<double>(count); cy /= static_cast<double>(count);
+        svg << "<text x=\"" << margin + cx * scale << "\" y=\""
+            << margin + (geometry.depth_m - cy) * scale
+            << "\" font-family=\"Arial,sans-serif\" font-size=\"13\" text-anchor=\"middle\" "
+            << "fill=\"#17202a\">";
+        append_svg_escape(svg, room.name);
+        svg << "</text>\n";
+    }
+    svg << "<text x=\"" << margin << "\" y=\"" << height - 6.0
+        << "\" font-family=\"Arial,sans-serif\" font-size=\"11\" fill=\"#475569\">"
+        << geometry.width_m << " m x " << geometry.depth_m << " m — Mayhem Building Forge</text>\n"
+        << "</svg>\n";
+
+    std::ofstream file(output_path, std::ios::binary);
+    if (!file) {
+        if (error) *error = "Could not open SVG output path: " + output_path;
+        return false;
+    }
+    file << svg.str();
+    if (!file.good()) {
+        if (error) *error = "Failed while writing SVG output: " + output_path;
+        return false;
+    }
+    return true;
+}
+} // namespace mbf
