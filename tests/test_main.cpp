@@ -138,6 +138,13 @@ void residential_variations(){
  ResidentialLayoutSettings settings;
  settings.width_m=12.0;settings.depth_m=9.0;settings.seed=20261031;
  const auto variations=generate_residential_variations(settings);
+ for(const auto profile:{ResidentialLayoutProfile::BalancedConventional,ResidentialLayoutProfile::OpenLiving,ResidentialLayoutProfile::PrivacyFirst}) {
+  auto ps=settings;
+  if(profile==ResidentialLayoutProfile::OpenLiving){ps.public_zone_depth_ratio=0.67;ps.circulation_depth_ratio=0.13;ps.living_width_ratio=0.60;ps.bedroom_width_ratio=0.58;}
+  if(profile==ResidentialLayoutProfile::PrivacyFirst){ps.public_zone_depth_ratio=0.55;ps.circulation_depth_ratio=0.22;ps.living_width_ratio=0.48;ps.bedroom_width_ratio=0.68;}
+  const auto pv=validate_architectural_layout(generate_balanced_residential_layout(ps));
+  for(const auto& error:pv.errors) std::cerr << residential_profile_name(profile) << ": " << error << std::endl;
+ }
  if(variations.size()!=3U) std::cerr << "variation_count=" << variations.size() << std::endl;
  req(variations.size()==3U,"all three residential profiles produce valid candidates");
  std::vector<ResidentialLayoutProfile> profiles;
