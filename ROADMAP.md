@@ -98,7 +98,7 @@ Detailed specification: [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md).
 
 ## Dynamic interior physics and destructibility requirement (accepted architecture decision, 2026-10-31)
 
-Interior furnishings and interactable props must be independent, movable entities—not permanently baked into a room mesh or locked to their authored transform. This includes tables, chairs, beds, cabinets, appliances, lamps, decoration, and user-added props.
+All environment elements within the player's active vicinity must support the dynamic behavior appropriate to their type. This includes building parts and fixtures, interior furnishings, appliances, movable props, vehicles, and relevant nearby environmental objects. Interior furnishings and interactable props must be independent entities—not permanently baked into a room mesh or locked to their authored transform. The player-vicinity rule is the activation boundary for dynamic simulation; it is not a city-wide always-on simulation requirement.
 
 Required capabilities:
 - Every prop has a stable semantic ID, asset reference, room association, transform, bounds, mass/inertia profile, friction/restitution, collision profile, mobility mode, and damage/destruction profile.
@@ -108,7 +108,8 @@ Required capabilities:
 - Destructible props use pre-fractured Geometry Collections or an appropriate damage-state system. Not every asset should be fractured: use intact-to-damaged visual states for inexpensive objects and full Chaos fracture only where justified.
 - Damage can propagate only through explicitly modeled connections (for example, stacked or constrained objects); do not imply physically accurate structural propagation without a validated model.
 - Persist object transforms, damage state, missing/broken state, and relevant physics state so the room does not reset unexpectedly after reload or save/load.
-- Provide performance tiers: full simulation nearby, simplified/low-frequency or sleeping physics at distance, and static/baked representation when interaction is not required. Use instancing only for props that do not need independent physics or damage.
+- Use player-proximity-driven activation as the governing rule: every relevant object and environmental element within the player's active vicinity is eligible for its full required dynamic behavior, including interaction, physics, damage, and destruction. This applies to the whole nearby environment—not only interior furniture. Do not arbitrarily downgrade nearby objects to simplified behavior merely to save performance; manage cost through scoped activation, culling, physics sleep when genuinely at rest, and sensible asset-specific simulation policies.
+- Outside the active player vicinity, suspend expensive live simulation and retain the authoritative world state (transforms, damage, broken/missing state, and other gameplay changes). On re-entry, restore that state and reactivate the required dynamics. Instancing or baked/static representations are permitted only for distant or non-interactive content, not as a substitute for independent behavior inside the active vicinity.
 - Keep authoring metadata and stable IDs in MayhemBuildingData; Unreal owns live simulation state and reports permitted edits/state changes back through the synchronization layer.
 
 Unreal implementation direction:
