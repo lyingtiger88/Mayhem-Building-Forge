@@ -20,6 +20,14 @@ bool line_intersection(Point2 p, Vec d, Point2 q, Vec e,
 }
 }
 
+double point_segment_distance(Point2 p,Point2 a,Point2 b) {
+    const double dx=b.x-a.x,dy=b.y-a.y;
+    const double length2=dx*dx+dy*dy;
+    if(length2<=1e-24)return std::hypot(p.x-a.x,p.y-a.y);
+    const double t=std::clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/length2,0.0,1.0);
+    return std::hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
+}
+
 PolygonOffsetResult offset_polygon(const Polygon2D& input,double offset,
                                    double miter_limit,double tolerance) {
     PolygonOffsetResult result;
@@ -74,9 +82,25 @@ PolygonOffsetResult offset_polygon(const Polygon2D& input,double offset,
         for(const auto& error:output_check.errors)fail("Offset result: "+error);
         return result;
     }
-    if(offset<0.0 && polygon_area(result.polygon)>=polygon_area(input)-tolerance) {
-        fail("Inward offset did not reduce polygon area; the requested inset may have collapsed.");
-        return result;
+    if(offset<0.0) {
+        if(polygon_area(result.polygon)>=polygon_area(input)-tolerance) {
+            fail("Inward offset did not reduce polygon area; the requested inset may have collapsed.");
+            return result;
+        }
+        for(const auto& vertex:result.polygon.vertices) {
+            if(!point_in_polygon(input,vertex,tolerance)) {
+                fail("Inward offset crossed outside the source polygon; the requested inset has collapsed.");
+                return result;
+            }
+            double nearest=std::numeric_limits<double>::max();
+            for(std::size_t i=0;i<input.vertices.size();++i)
+                nearest=std::min(nearest,point_segment_distance(vertex,input.vertices[i],
+                    input.vertices[(i+1U)%input.vertices.size()]));
+            if(nearest+ tolerance < std::abs(offset)) {
+                fail("Inward offset does not preserve the requested boundary clearance; the inset has collapsed.");
+                return result;
+            }
+        }
     }
     if(offset>0.0 && polygon_area(result.polygon)<=polygon_area(input)+tolerance) {
         fail("Outward offset did not increase polygon area.");
