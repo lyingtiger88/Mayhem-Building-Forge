@@ -40,13 +40,16 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [ ] Merge collinear edges and remove duplicate or zero-length segments. (Grid-growth boundary cleanup remains pending.)
 - [ ] Classify boundaries as exterior walls, shared internal walls, or open circulation boundaries.
 - [ ] Calculate shared wall lengths and preserve room-to-wall relationships.
-- [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.\n- [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
+- [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.
+- [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [ ] Generate door candidates on valid shared boundaries and validate clear widths.
 - [ ] Generate window candidates only on exterior boundaries.
-- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.\n- [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
+- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
+- [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
 - [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
 - [x] Export a human-readable 2D debug drawing (SVG; first visual-debug version).
-- [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.\n- [ ] Add broader property-based tests for geometry edge cases.
+- [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.
+- [ ] Add broader property-based tests for geometry edge cases.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
