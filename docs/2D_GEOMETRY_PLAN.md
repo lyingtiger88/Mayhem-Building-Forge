@@ -101,6 +101,20 @@ For small briefs (up to seven rooms), the planner evaluates permutations and cut
 
 These are configurable design heuristics, not universal architectural rules. They are a starting residential profile; future building typologies must supply their own role and adjacency profiles. Adjacency is not yet a door/access graph: a shared boundary does not by itself prove usable circulation. No building-code or structural compliance is implied.
 
+
+## 4.2 Topology-first residential prototype (implemented first slice)
+
+The sample application now calls `generate_residential_layout` with an explicit south-side entrance. This is a separate residential-profile entry point; the generic treemap generator remains available.
+
+The initial balanced-conventional profile requires these room roles: Living, Kitchen, Bedroom, Bathroom, and Hallway. Candidate rectangular partitions are rejected unless:
+- Living shares a boundary with Kitchen and Hallway.
+- Hallway shares a boundary with Kitchen, Bedroom, and Bathroom.
+- Hallway touches the selected exterior side and can host a preliminary entrance segment at least 0.9 m wide.
+
+Among candidates satisfying those hard topology constraints, deterministic scoring prefers public rooms toward the southern/central portion, a bedroom farther from the entrance, a reasonable living-room centrality, and compact proportions. The entrance is stored in the floor-plan model and rendered in SVG. Preliminary circulation links record shared-boundary relationships; they are not door objects and do not yet prove traversability.
+
+This first slice deliberately does not claim a finished architectural plan. Remaining work includes explicit door placement, a corridor path/clear-width model, opening validation, daylight/orientation rules, room minimum dimensions, multiple bedrooms, alternate residential profiles, and tests across varied footprints and entrance sides.
+
 ## 5. Walls, doors, windows, and circulation
 
 ### Walls
