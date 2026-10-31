@@ -220,4 +220,171 @@ FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings& s,
         throw std::runtime_error("Could not produce a valid rectangular room layout.");
     return best;
 }
+
+FloorPlan FloorPlanGenerator::generate_residential_layout(
+    const GenerationSettings& s, const std::vector<RoomSpec>& rs,
+    EntranceSide entrance_side) const {
+    check(s, rs);
+
+    std::vector<RoomRole> roles;
+    roles.reserve(rs.size());
+    for (const auto& room : rs) roles.push_back(resolved_role(room));
+
+    const auto find_role = [&](RoomRole role) -> std::size_t {
+        const auto it = std::find(roles.begin(), roles.end(), role);
+        return it == roles.end() ? rs.size() : static_cast<std::size_t>(it - roles.begin());
+    };
+    const std::size_t living = find_role(RoomRole::Living);
+    const std::size_t kitchen = find_role(RoomRole::Kitchen);
+    const std::size_t bedroom = find_role(RoomRole::Bedroom);
+    const std::size_t bathroom = find_role(RoomRole::Bathroom);
+    const std::size_t hallway = find_role(RoomRole::Hallway);
+    if (living == rs.size() || kitchen == rs.size() || bedroom == rs.size() ||
+        bathroom == rs.size() || hallway == rs.size()) {
+        throw std::invalid_argument(
+            "Topology-first residential layout requires Living, Kitchen, Bedroom, Bathroom, and Hallway roles.");
+    }
+
+    const auto adjacent = [&](const FloorPlan& plan, std::size_t a, std::size_t b) {
+        return shared_length(plan.rooms[a].bounds, plan.rooms[b].bounds) > 1e-7;
+    };
+    const auto touches_entrance_side = [&](const Rect& r) {
+        constexpr double eps = 1e-7;
+        switch (entrance_side) {
+            case EntranceSide::South: return std::abs(r.y) < eps;
+            case EntranceSide::North: return std::abs(r.y + r.height - s.depth_m) < eps;
+            case EntranceSide::West: return std::abs(r.x) < eps;
+            case EntranceSide::East: return std::abs(r.x + r.width - s.width_m) < eps;
+        }
+        return false;
+    };
+
+    FloorPlan best;
+    double best_score = -std::numeric_limits<double>::infinity();
+    const std::size_t n = rs.size();
+    std::vector<std::size_t> order(n);
+    std::iota(order.begin(), order.end(), 0U);
+
+    const auto consider = [&](const std::vector<std::size_t>& candidate_order,
+                              std::uint64_t mask, FloorPlan& current_best,
+                              double& current_score) {
+        try {
+            auto candidate = make_rectangular_candidate(s, rs, candidate_order, mask);
+            candidate.algorithm = FloorPlanAlgorithm::ResidentialTopologyFirst;
+
+            // These are topology constraints, not soft preferences. A layout
+            // that misses any required relationship is rejected outright.
+            if (!adjacent(candidate, living, kitchen) ||
+                !adjacent(candidate, living, hallway) ||
+                !adjacent(candidate, hallway, bedroom) ||
+                !adjacent(candidate, hallway, bathroom) ||
+                !touches_entrance_side(candidate.rooms[hallway].bounds)) return;
+
+            const Rect& h = candidate.rooms[hallway].bounds;
+            const double side_length =
+                (entrance_side == EntranceSide::South || entrance_side == EntranceSide::North)
+                    ? h.width : h.height;
+            const double door_width = std::min(1.0, side_length - 0.35);
+            if (door_width < 0.9) return;
+
+            double score = layout_score(candidate, roles);
+            const auto center = [](const Rect& r) {
+                return std::pair<double,double>{r.x + r.width * 0.5, r.y + r.height * 0.5};
+            };
+            const auto [lx, ly] = center(candidate.rooms[living].bounds);
+            const auto [kx, ky] = center(candidate.rooms[kitchen].bounds);
+            const auto [bx, by] = center(candidate.rooms[bedroom].bounds);
+            const auto [hx, hy] = center(h);
+            const double diagonal = std::hypot(s.width_m, s.depth_m);
+
+            // Balanced conventional profile: public rooms stay in the
+            // southern/central part; private bedroom is deeper from entry;
+            // the hall is anchored to the requested entrance facade.
+            score += 7.0 * (1.0 - std::clamp((ly + ky) / (2.0 * s.depth_m), 0.0, 1.0));
+            score += 5.0 * std::hypot(lx - kx, ly - ky) * -1.0 / std::max(diagonal, 1e-9);
+            const double entry_x = (entrance_side == EntranceSide::East) ? s.width_m :
+                                   (entrance_side == EntranceSide::West) ? 0.0 : s.width_m * 0.5;
+            const double entry_y = (entrance_side == EntranceSide::North) ? s.depth_m :
+                                   (entrance_side == EntranceSide::South) ? 0.0 : s.depth_m * 0.5;
+            const double bedroom_entry_distance =
+                std::hypot(bx - entry_x, by - entry_y) / std::max(diagonal, 1e-9);
+            score += 5.0 * bedroom_entry_distance;
+            score -= 2.0 * std::hypot(hx - entry_x, hy - entry_y) / std::max(diagonal, 1e-9);
+
+            if (score <= current_score + 1e-10) return;
+
+            candidate.entrance.defined = true;
+            candidate.entrance.side = entrance_side;
+            candidate.entrance.room_id = static_cast<RoomId>(hallway);
+            candidate.entrance.clear_width_m = door_width;
+            const double half = door_width * 0.5;
+            switch (entrance_side) {
+                case EntranceSide::South:
+                    candidate.entrance.start_x = hx - half;
+                    candidate.entrance.end_x = hx + half;
+                    candidate.entrance.start_y = candidate.entrance.end_y = 0.0;
+                    break;
+                case EntranceSide::North:
+                    candidate.entrance.start_x = hx - half;
+                    candidate.entrance.end_x = hx + half;
+                    candidate.entrance.start_y = candidate.entrance.end_y = s.depth_m;
+                    break;
+                case EntranceSide::West:
+                    candidate.entrance.start_x = candidate.entrance.end_x = 0.0;
+                    candidate.entrance.start_y = hy - half;
+                    candidate.entrance.end_y = hy + half;
+                    break;
+                case EntranceSide::East:
+                    candidate.entrance.start_x = candidate.entrance.end_x = s.width_m;
+                    candidate.entrance.start_y = hy - half;
+                    candidate.entrance.end_y = hy + half;
+                    break;
+            }
+
+            candidate.circulation_links.clear();
+            for (std::size_t i = 0; i < candidate.rooms.size(); ++i) {
+                if (i == hallway) continue;
+                const double length = shared_length(h, candidate.rooms[i].bounds);
+                if (length > 1e-7) {
+                    candidate.circulation_links.push_back({
+                        static_cast<RoomId>(hallway), static_cast<RoomId>(i), length
+                    });
+                }
+            }
+            // An open-plan living/kitchen connection is represented separately
+            // from corridor access; a future door/opening pass decides its form.
+            candidate.circulation_links.push_back({
+                static_cast<RoomId>(living), static_cast<RoomId>(kitchen),
+                shared_length(candidate.rooms[living].bounds, candidate.rooms[kitchen].bounds)
+            });
+
+            current_score = score;
+            current_best = std::move(candidate);
+        } catch (const std::runtime_error&) {
+            // Invalid guillotine cuts are not valid candidate layouts.
+        }
+    };
+
+    if (n <= 7U) {
+        const std::uint64_t masks = 1ULL << (n - 1U);
+        do {
+            for (std::uint64_t mask = 0; mask < masks; ++mask)
+                consider(order, mask, best, best_score);
+        } while (std::next_permutation(order.begin(), order.end()));
+    } else {
+        std::mt19937_64 rng(s.seed);
+        for (std::size_t attempt = 0; attempt < 4096U; ++attempt) {
+            std::shuffle(order.begin(), order.end(), rng);
+            consider(order, rng(), best, best_score);
+        }
+    }
+
+    if (best.rooms.empty()) {
+        throw std::runtime_error(
+            "No residential layout satisfies the required room topology and entrance constraints. "
+            "Try changing the footprint or room area targets.");
+    }
+    return best;
+}
+
 } // namespace mbf
