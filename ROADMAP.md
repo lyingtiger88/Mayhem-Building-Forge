@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — wall topology, circulation, architectural validation, and concave-polygon overlap validation implemented**
+**Status: In progress — concave polygon regions, interior voids, and partition coverage validation implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -66,14 +66,16 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Add deterministic regression sweeps for 100 rectangle intersection cases, concave containment, edge touching, overlap, and missing footprint coverage.
 - [ ] Add larger property-based and fuzz testing across pathological polygons and floating-point tolerances.
 - [x] Replace axis-aligned bounding-box overlap checks with triangulation-based positive-area intersection tests for valid simple concave/convex room polygons; check coverage by no-overlap plus summed area inside a rectangular envelope.
-- [ ] Add constrained non-rectangular building envelopes and holes; improve numerical robustness for near-collinear and complex polygons.
+- [x] Add generic polygon-region contract with a simple concave outer boundary and zero or more interior holes.
+- [x] Validate room partitions against L-shaped and U-shaped envelopes, courtyard voids, outside parts, overlap, and uncovered area.
+- [ ] Add polygon offsetting/inset operations for wall thickness and buildable setbacks; improve numerical robustness for near-collinear and complex polygons.
 - [x] Add deterministic residential profiles and generate multiple architecturally validated candidates from one footprint and brief.
 - [ ] Expand profiles into genuinely different room graphs, including optional vestibules and alternative corridor topologies.
 - [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-The new standalone Polygon Engine, normalized boundary graph, and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+The new standalone Polygon Engine, polygon-region partition validator, normalized boundary graph, and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
@@ -243,7 +245,7 @@ The first balanced south-entry residential layout is accepted as one selectable 
 
 ## Current execution order
 
-1. Complete Milestone 1: canonical 2D geometry, walls, openings, circulation, and SVG/debug output.
+1. Complete Milestone 1: canonical 2D geometry, arbitrary outer envelopes and holes, walls, openings, physical circulation, and SVG/debug output.
 2. Complete Milestone 2: multi-floor model and vertical circulation.
 3. Complete Milestone 3: 3D structural geometry generated from the validated 2D model.
 4. Continue with facades and complete interiors.
