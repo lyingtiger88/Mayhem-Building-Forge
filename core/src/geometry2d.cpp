@@ -326,8 +326,9 @@ bool add_wall_opening(WallTopology2D& topology,std::uint64_t wall_id,
     if(wall_it==topology.walls.end()) return fail("Opening references an unknown wall ID.");
     if(!std::isfinite(offset_m)||!std::isfinite(width_m)||width_m<=tolerance)
         return fail("Opening offset and width must be finite; width must be positive.");
-    if(kind==OpeningKind2D::Window && wall_it->kind!=BoundaryKind2D::ExteriorWall)
-        return fail("Windows can only be placed on exterior walls.");
+    if((kind==OpeningKind2D::Window||kind==OpeningKind2D::EntranceDoor) &&
+       wall_it->kind!=BoundaryKind2D::ExteriorWall)
+        return fail("Windows and entrance doors can only be placed on exterior walls.");
     if((kind==OpeningKind2D::InteriorDoor||kind==OpeningKind2D::OpenPlan) &&
        wall_it->kind!=BoundaryKind2D::SharedWall)
         return fail("Interior doors and open-plan connections require a shared wall.");
@@ -351,6 +352,90 @@ bool add_wall_opening(WallTopology2D& topology,std::uint64_t wall_id,
     topology.openings.push_back(opening);
     rebuild_wall_pieces(topology,tolerance);
     return true;
+}
+
+
+CirculationGraph2D build_circulation_graph(const WallTopology2D& topology,
+        const std::vector<RoomId>& room_ids,double minimum_clear_width_m,double tolerance) {
+    CirculationGraph2D graph;
+    const auto report=[&](const std::string& message){graph.valid=false;graph.diagnostics.push_back(message);};
+    if(!std::isfinite(minimum_clear_width_m)||minimum_clear_width_m<=0.0) {
+        report("Minimum circulation clear width must be finite and positive.");
+        return graph;
+    }
+    std::vector<RoomId> rooms=room_ids;
+    std::sort(rooms.begin(),rooms.end());
+    if(std::adjacent_find(rooms.begin(),rooms.end())!=rooms.end())
+        report("Room ID list contains duplicates.");
+    if(rooms.empty()) {
+        report("Circulation graph requires at least one room.");
+        return graph;
+    }
+    const auto has_room=[&](RoomId id){return std::binary_search(rooms.begin(),rooms.end(),id);};
+    std::vector<RoomId> seeds;
+    for(const auto& opening:topology.openings) {
+        const auto wall=std::find_if(topology.walls.begin(),topology.walls.end(),
+            [&](const BoundarySegment2D& candidate){return candidate.id==opening.wall_id;});
+        if(wall==topology.walls.end()) {
+            report("Opening references a wall missing from the topology.");
+            continue;
+        }
+        if(!std::isfinite(opening.width_m)||opening.width_m<=tolerance||
+           !std::isfinite(opening.offset_m)||opening.offset_m< -tolerance||
+           opening.offset_m+opening.width_m>wall->length_m+tolerance) {
+            report("Opening has invalid dimensions or lies outside its source wall.");
+            continue;
+        }
+        if(opening.kind==OpeningKind2D::Window) continue;
+        if(opening.width_m+tolerance<minimum_clear_width_m) {
+            report("Access opening "+std::to_string(opening.id)+" is narrower than the minimum clear width.");
+            continue;
+        }
+        if(opening.kind==OpeningKind2D::EntranceDoor) {
+            if(wall->kind!=BoundaryKind2D::ExteriorWall) {
+                report("Entrance door must be placed on an exterior wall.");
+                continue;
+            }
+            if(!has_room(opening.room_a)) {
+                report("Entrance door references a room absent from the room model.");
+                continue;
+            }
+            graph.links.push_back({opening.room_a,opening.room_a,opening.id,
+                                   opening.width_m,opening.kind,true});
+            seeds.push_back(opening.room_a);
+            continue;
+        }
+        if(wall->kind!=BoundaryKind2D::SharedWall||!has_room(opening.room_a)||
+           !has_room(opening.room_b)||opening.room_a==opening.room_b) {
+            report("Interior access opening must connect two distinct known rooms on a shared wall.");
+            continue;
+        }
+        graph.links.push_back({opening.room_a,opening.room_b,opening.id,
+                               opening.width_m,opening.kind,false});
+    }
+    std::sort(seeds.begin(),seeds.end());
+    seeds.erase(std::unique(seeds.begin(),seeds.end()),seeds.end());
+    std::vector<RoomId> queue=seeds;
+    for(std::size_t i=0;i<queue.size();++i) {
+        const RoomId current=queue[i];
+        for(const auto& link:graph.links) {
+            if(link.is_entrance) continue;
+            RoomId next=static_cast<RoomId>(-1);
+            if(link.from_room==current) next=link.to_room;
+            else if(link.to_room==current) next=link.from_room;
+            if(next!=static_cast<RoomId>(-1)&&
+               std::find(queue.begin(),queue.end(),next)==queue.end())
+                queue.push_back(next);
+        }
+    }
+    graph.reachable_room_ids=queue;
+    std::sort(graph.reachable_room_ids.begin(),graph.reachable_room_ids.end());
+    for(const RoomId id:rooms)
+        if(!std::binary_search(graph.reachable_room_ids.begin(),graph.reachable_room_ids.end(),id)) {
+            graph.inaccessible_room_ids.push_back(id);
+            report("Room "+std::to_string(id)+" is not reachable from an exterior entrance.");
+        }
+    return graph;
 }
 
 void rebuild_wall_pieces(WallTopology2D& topology,double tolerance) {
