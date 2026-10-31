@@ -155,6 +155,10 @@ Detailed specification: [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md).
 
 Multiplayer is intentionally not an early milestone. It should be designed after determinism and the building data model stabilize.
 
+## Residential variation decision (2026-10-31)
+
+The first balanced south-entry residential layout is accepted as one selectable design variation, not as a universal template. The next residential iteration should introduce a variation/profile interface and generate multiple valid candidates from the same footprint and room brief. Initial profiles: Balanced Conventional (the accepted baseline), Open Living (larger shared public zone), and Privacy First (stronger separation and controlled entry/circulation). Profiles must change actual room topology and openings—not merely colors, labels, or random coordinates. Each candidate must pass polygon validity, footprint coverage, overlap, opening-boundary, and circulation-connectivity checks before it is offered as a variation.
+
 ## Current execution order
 
 1. Complete Milestone 1: canonical 2D geometry, walls, openings, circulation, and SVG/debug output.
