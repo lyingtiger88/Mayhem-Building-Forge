@@ -1,5 +1,6 @@
 #include "mbf/floor_plan.hpp"
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <set>
 #include <utility>
