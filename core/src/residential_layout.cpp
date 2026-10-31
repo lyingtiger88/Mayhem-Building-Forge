@@ -192,6 +192,84 @@ LayoutValidation validate_residential_layout(const ResidentialLayout2D& p,double
 }
 
 
+
+CirculationValidation2D validate_physical_circulation(
+        const ResidentialLayout2D& layout,const CirculationSettings2D& settings) {
+    CirculationValidation2D result;
+    const auto fail=[&](const std::string& message){result.errors.push_back(message);};
+    if(!std::isfinite(settings.minimum_corridor_width_m)||settings.minimum_corridor_width_m<=0.0||
+       !std::isfinite(settings.minimum_door_clear_width_m)||settings.minimum_door_clear_width_m<=0.0||
+       !std::isfinite(settings.door_approach_depth_m)||settings.door_approach_depth_m<=0.0||
+       !std::isfinite(settings.tolerance)||settings.tolerance<=0.0) {
+        fail("Physical circulation settings must be finite and positive.");
+        return result;
+    }
+    const auto find_room=[&](RoomId id)->const PlannedRoom* {
+        const auto it=std::find_if(layout.rooms.begin(),layout.rooms.end(),
+            [&](const PlannedRoom& room){return room.id==id;});
+        return it==layout.rooms.end()?nullptr:&*it;
+    };
+    bool has_entrance=false;
+    for(const auto& opening:layout.openings) {
+        if(opening.kind==OpeningKind::EntranceDoor)has_entrance=true;
+        const double width=std::hypot(opening.end.x-opening.start.x,
+                                      opening.end.y-opening.start.y);
+        if(!std::isfinite(width)||width<settings.minimum_door_clear_width_m-settings.tolerance) {
+            fail("Opening "+std::to_string(result.door_approaches.size())+
+                 " is narrower than the required clear width.");
+            continue;
+        }
+        const auto* first=find_room(opening.from_room);
+        if(!first) {
+            fail("Door approach references an unknown source room.");
+            continue;
+        }
+        const auto make_approach=[&](const PlannedRoom& room,std::size_t index) {
+            const Point2 mid{(opening.start.x+opening.end.x)*0.5,
+                             (opening.start.y+opening.end.y)*0.5};
+            const double tx=(opening.end.x-opening.start.x)/width;
+            const double ty=(opening.end.y-opening.start.y)/width;
+            const Point2 center=polygon_centroid(room.footprint);
+            double nx=-ty,ny=tx;
+            if((center.x-mid.x)*nx+(center.y-mid.y)*ny<0.0){nx=-nx;ny=-ny;}
+            const double d=settings.door_approach_depth_m;
+            Polygon2D envelope{{opening.start,opening.end,
+                {opening.end.x+nx*d,opening.end.y+ny*d},
+                {opening.start.x+nx*d,opening.start.y+ny*d}}};
+            bool inside=validate_polygon(envelope,settings.tolerance).valid;
+            for(const auto& vertex:envelope.vertices)
+                inside=inside&&point_in_polygon(room.footprint,vertex,settings.tolerance);
+            result.door_approaches.push_back({room.id,index,std::move(envelope),d,inside});
+            if(!inside)
+                fail("Door approach clearance extends outside room "+room.name+
+                     "; move the opening or increase the available approach space.");
+        };
+        const auto index=static_cast<std::size_t>(&opening-layout.openings.data());
+        make_approach(*first,index);
+        if(opening.kind!=OpeningKind::EntranceDoor) {
+            const auto* second=find_room(opening.to_room);
+            if(!second)fail("Interior opening references an unknown destination room.");
+            else make_approach(*second,index);
+        }
+    }
+    if(!has_entrance)fail("No exterior entrance is defined for circulation.");
+    for(const auto& room:layout.rooms) {
+        if(room.role!=RoomRole::Hallway)continue;
+        if(room.footprint.vertices.empty())continue;
+        double min_x=std::numeric_limits<double>::max();
+        double min_y=min_x,max_x=-min_x,max_y=-min_x;
+        for(const auto& vertex:room.footprint.vertices) {
+            min_x=std::min(min_x,vertex.x);min_y=std::min(min_y,vertex.y);
+            max_x=std::max(max_x,vertex.x);max_y=std::max(max_y,vertex.y);
+        }
+        const double clear_width=std::min(max_x-min_x,max_y-min_y);
+        if(clear_width<settings.minimum_corridor_width_m-settings.tolerance)
+            fail("Hallway "+room.name+" is narrower than the configured clear width.");
+    }
+    result.valid=result.errors.empty();
+    return result;
+}
+
 LayoutValidation validate_architectural_layout(const ResidentialLayout2D& p,
         const ArchitecturalValidationSettings& s) {
     LayoutValidation result;
