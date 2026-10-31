@@ -231,7 +231,7 @@ void physical_circulation_clearances(){
  const auto plan=generate_balanced_residential_layout(layout_settings);
  const auto valid=validate_physical_circulation(plan);
  req(valid.valid,"baseline residential plan passes physical circulation checks");
- req(valid.door_approaches.size()==9U,
+ req(valid.door_approaches.size()==11U,
      "entrance and internal doors produce approach envelopes on each served side");
  for(const auto& approach:valid.door_approaches) {
   req(approach.valid,"door approach envelope fits within its room");
