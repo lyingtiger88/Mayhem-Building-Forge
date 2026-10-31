@@ -47,7 +47,8 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Classify degree-2 straight/corner nodes and degree-3 T-junctions, degree-4 cross-junctions, endpoints, and complex junctions.
 - [x] Build a room-access graph from entrance, interior-door, and open-plan openings; report rooms unreachable from an exterior entrance.
 - [x] Validate access-opening clear widths and enforce entrance-door placement on exterior walls.
-- [ ] Generate explicit corridor/path geometry and validate physical route continuity, turning space, and furniture obstruction.
+- [x] Validate minimum clear width of hallway zones and construct per-side door approach clearance envelopes; reject approaches that extend outside the served room.
+- [ ] Generate continuous navigable path centerlines, validate turning spaces, and test clearance against furniture footprints once furnishing entities are introduced.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [x] Add semantic door/window opening records with stable IDs, dimensions, sill heights, and room ownership.
 - [x] Validate door/open-plan openings on shared walls and windows on exterior walls only.
@@ -145,7 +146,7 @@ This is an accepted product requirement and architecture decision, not an implem
 - [ ] Room function profiles and furnishing templates.
 - [ ] Independent semantic prop entities with stable IDs, transforms, room association, physical properties, mobility and damage profiles.
 - [ ] Editable furniture placement and runtime move/rotate/replace/remove workflows with layout persistence.
-- [ ] Furniture footprints, clearance envelopes, and circulation paths.
+- [ ] Furniture footprints, clearance envelopes, and circulation paths; connect furnishing collision checks to the physical circulation envelopes.
 - [ ] Movable, constrained, anchored, and static prop behavior; impact, impulse, pressure and radial-force responses.
 - [ ] Selective destructibility for suitable props, including damage states and Chaos Geometry Collections where appropriate.
 - [ ] Persist prop transforms and damage/broken states across save/load.
