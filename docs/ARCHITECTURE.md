@@ -1,19 +1,162 @@
-# Architecture
+# Technical Architecture
 
-Mayhem Building Forge is an engine-independent C++20 architecture core with two clients: a Qt desktop authoring application and an Unreal Engine plugin. Both consume the same versioned core contract; architectural rules remain in Core.
+## 1. System overview
 
-## Current core
-- FloorPlan: metric footprint, room regions, grid-cell ownership, room adjacency.
-- FloorPlanGenerator: deterministic grid-growth and weighted treemap algorithms.
-- Validation: basic invariants for dimensions, room identity, area, cell ownership, and adjacency.
+Mayhem Building Forge is designed as an engine-independent procedural architecture system. Architectural rules and generation algorithms live in the core library; user interfaces and rendering engines consume its versioned output.
 
-## Generation modes
-- Offline: batch-generate, validate, and bake reusable assets.
-- Runtime: generate selected variants or changed structures under bounded job budgets.
-- Streaming: load/unload shells and interior chunks according to player relevance.
+The planned clients are:
+- **Desktop authoring application:** project setup, building briefs, 2D/3D preview, editing, generation controls, and asset-library management.
+- **Unreal Engine integration:** editor import/baking, runtime generation hooks, world placement, collision/navigation setup, and streaming integration.
 
-## Determinism
-Each request carries a seed and schema version. Output-changing algorithm changes require a generator-version increment or compatibility policy.
+The desktop application and Unreal integration are product targets. Neither is implemented in the current repository baseline.
 
-## Scale
-Use instancing for repeated props, separate structure from decoration, keep collision meshes simpler than render meshes, and avoid loading all interiors simultaneously. Bake LOD/HLOD and streaming metadata offline. Multiplayer should replicate seed/version and approved state deltas rather than full meshes.
+## 2. High-level component boundaries
+
+    User / Project
+          |
+          v
+    Authoring Interface
+    (planned desktop UI)
+          |
+          v
+    Building Brief + Constraints
+          |
+          v
+    Generation Orchestrator
+          |
+          +---- Floor-plan algorithms
+          |       +---- Grid growth
+          |       +---- Weighted treemap
+          |
+          +---- Architectural validation
+          |       +---- Geometry
+          |       +---- Room connectivity
+          |       +---- Circulation
+          |       +---- Building constraints
+          |
+          v
+    Versioned Building Model
+          |
+          +---- Structural geometry
+          +---- Facade generation
+          +---- Interior furnishing
+          |
+          v
+    Export / Bake
+          |
+          +---- Desktop preview
+          +---- Unreal Engine adapter
+
+Only the initial floor-plan algorithm and basic validation portions are present in code today. The other boxes describe the intended architecture.
+
+## 3. Core data model
+
+### Building brief
+The future building brief will describe typology, footprint, floor count, floor heights, architectural style, room schedule, constraints, and generation settings.
+
+### Floor plan
+The current FloorPlan contract contains:
+- schema version and deterministic seed;
+- building footprint dimensions in metres;
+- selected floor-plan algorithm;
+- room regions;
+- grid cells for cell-based plans;
+- room adjacency records.
+
+### Room region
+A room region has a stable room ID, name, target and generated area, bounding rectangle, and (for grid plans) its owned cells.
+
+### Future building model
+The next data-contract layers should represent:
+- floors and vertical relationships;
+- structural elements and openings;
+- doors, windows, and circulation links;
+- facade/material assignments;
+- furniture instances and clearance envelopes;
+- export metadata and generator compatibility.
+
+## 4. Hybrid generation strategy
+
+MBF uses complementary algorithms rather than forcing every building through one technique.
+
+### Grid growth
+A room starts from a seed cell and expands through free neighbouring cells. This provides flexible, non-rectangular room footprints. The current implementation uses a deterministic random generator and area-weighted growth priority.
+
+### Weighted rectangular subdivision
+The building footprint is partitioned into rectangular room regions based on target-area weights. It is useful for compact layouts and quick candidate generation. The current implementation is a weighted treemap-style baseline, not a complete architectural planner.
+
+### Rule-based orchestration
+Planned orchestration will select and combine algorithms according to typology and constraints. For example, a vertical circulation core can be reserved before room allocation; wet rooms can be clustered; bedrooms can be kept away from public entrances; corridors and access requirements can be checked after candidate generation.
+
+### Asset-assisted completion
+After geometry is validated, curated asset libraries can provide doors, windows, fixtures, furniture, and decorative elements. Asset selection must respect room function, scale, style, collision, and clearance constraints.
+
+## 5. Validation pipeline
+
+Validation is a first-class stage, not a final visual inspection.
+
+Planned validation layers:
+1. **Input validation:** dimensions, room schedule, supported ranges, and units.
+2. **Footprint validation:** complete coverage, no unintended overlaps or gaps.
+3. **Room validation:** minimum area, usable dimensions, aspect ratio, and shape quality.
+4. **Connectivity validation:** every required room is reachable from an entrance through valid circulation.
+5. **Opening validation:** doors connect valid spaces; windows lie on exterior boundaries.
+6. **Vertical validation:** stairs/elevators connect the intended floors.
+7. **3D validation:** mesh integrity, opening geometry, collision, and navigation.
+8. **Interior validation:** furniture clearances, object collisions, and circulation paths.
+
+The current code implements only basic dimensions, room identity, positive area, cell ownership, and adjacency checks. It does not yet implement the complete pipeline above.
+
+## 6. Determinism and versioning
+
+A generation request must carry:
+- a seed;
+- a building-model schema version;
+- a generator version;
+- explicit dimensions and room inputs;
+- algorithm settings.
+
+For the same inputs, seed, and generator version, the core should produce the same logical result. Any change that intentionally alters output must update the generator version or follow a documented compatibility policy.
+
+## 7. Desktop and Unreal responsibilities
+
+### Desktop application (planned)
+The desktop application is the authoring and inspection environment. It should not duplicate architectural algorithms. It should call the core, display its output, and store project settings and user overrides.
+
+### Unreal adapter (planned)
+The Unreal adapter translates the engine-neutral model into Unreal assets and runtime objects. It owns engine-specific concerns such as actor/component creation, material assignment, collision, navigation, LOD/HLOD, World Partition, and runtime budgets.
+
+The core must not include Unreal headers or depend on Unreal object lifetimes.
+
+## 8. Large-world and performance strategy
+
+Large-scale generation requires offline and runtime responsibilities to be separated:
+
+- **Offline generation:** create and validate stable building variants; bake meshes and metadata.
+- **Runtime generation:** support bounded variants or localized changes with explicit time and memory budgets.
+- **Streaming:** load and unload shells, floors, and interior chunks based on player relevance.
+- **Instancing:** reuse repeated props and structural modules where possible.
+- **LOD/HLOD:** prepare simplified representations for distant buildings.
+- **Caching:** key generated output by brief, seed, algorithm version, and asset-library version.
+
+Multiplayer is deferred. Once determinism and the building model are stable, replication should prefer seed/version plus approved state deltas rather than sending complete generated meshes.
+
+## 9. Current implementation boundary
+
+Implemented now:
+- C++20 core library;
+- grid-growth and weighted treemap floor-plan generation;
+- room regions, areas, bounds, cell ownership, and adjacency;
+- basic validation;
+- CMake sample and regression tests.
+
+Not implemented:
+- full architectural constraints and circulation;
+- multi-floor building model;
+- 3D structural and facade generation;
+- complete furnishing;
+- desktop application;
+- Unreal plugin;
+- streaming and multiplayer.
+
+See ROADMAP.md for milestones and exit criteria.
