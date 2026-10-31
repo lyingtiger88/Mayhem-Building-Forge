@@ -115,6 +115,19 @@ Among candidates satisfying those hard topology constraints, deterministic scori
 
 This first slice deliberately does not claim a finished architectural plan. Remaining work includes explicit door placement, a corridor path/clear-width model, opening validation, daylight/orientation rules, room minimum dimensions, multiple bedrooms, alternate residential profiles, and tests across varied footprints and entrance sides.
 
+
+## 4.3 First balanced residential zoning prototype
+
+A separate polygon-based residential planner has been added. Unlike the earlier room treemap, it defines a coherent five-zone arrangement over a configurable rectangular footprint:
+- south/public band: Living and Kitchen, with a broad open-plan connection;
+- middle band: a continuous 1.5 m nominal circulation spine (scaled from the footprint depth);
+- north/private/service band: Bedroom and Bathroom, each with a direct opening to the circulation spine;
+- south-facing entrance opening into the living/public zone.
+
+The default demonstration uses a 12 m × 9 m footprint. Room footprints are explicit polygons and are validated for simple boundaries, in-footprint placement, no positive-area overlap, and complete footprint area coverage. Door/open-plan segments are explicit model objects and are checked against their host boundaries.
+
+This is an intentionally simple, deterministic first typology—not a general architectural solver. It currently supports one bedroom and one bathroom, a rectangular envelope, and a conventional public/circulation/private zoning pattern. It does not yet model furniture clearances, windows/daylight, wall thickness, door swing, plumbing shafts, structural constraints, or local building regulations. The older topology-first treemap remains experimental and is not used by this new sample.
+
 ## 5. Walls, doors, windows, and circulation
 
 ### Walls
