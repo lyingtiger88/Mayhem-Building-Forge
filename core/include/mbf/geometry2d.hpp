@@ -14,6 +14,25 @@ struct Ring2 {
     [[nodiscard]] double signed_area_m2() const noexcept;
 };
 
+enum class BoundaryKind2D { ExteriorWall, SharedWall };
+
+struct CoordinateSystem2D {
+    std::string units{"metres"};
+    std::string origin{"south-west"};
+    std::string positive_x{"east"};
+    std::string positive_y{"north"};
+};
+
+struct BoundarySegment2D {
+    std::uint64_t id{};
+    Point2 start;
+    Point2 end;
+    double length_m{};
+    BoundaryKind2D kind{BoundaryKind2D::ExteriorWall};
+    RoomId room_a{};
+    RoomId room_b{};
+};
+
 struct RoomGeometry2D {
     RoomId id{};
     std::string name;
@@ -25,7 +44,9 @@ struct BuildingGeometry2D {
     std::uint32_t schema_version{1};
     double width_m{}, depth_m{};
     Entrance2D entrance;
+    CoordinateSystem2D coordinates;
     std::vector<RoomGeometry2D> rooms;
+    std::vector<BoundarySegment2D> boundaries;
 };
 
 struct Geometry2DResult {
@@ -35,6 +56,7 @@ struct Geometry2DResult {
 };
 
 [[nodiscard]] Geometry2DResult build_geometry_2d(const FloorPlan& plan);
+[[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
