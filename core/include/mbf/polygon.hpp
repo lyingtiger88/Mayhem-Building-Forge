@@ -25,6 +25,11 @@ struct PolygonValidation {
                                                    double tolerance = 1e-9);
 [[nodiscard]] bool point_in_polygon(const Polygon2D& polygon, Point2 point,
                                     double tolerance = 1e-9);
+// Positive-area overlap only; edge or vertex touching returns zero.
+// Requires two valid simple polygons. Returns NaN for invalid input.
+[[nodiscard]] double polygon_intersection_area(const Polygon2D& a,
+                                               const Polygon2D& b,
+                                               double tolerance = 1e-9);
 [[nodiscard]] double shared_boundary_length(const Polygon2D& a,
                                             const Polygon2D& b,
                                             double tolerance = 1e-8);
