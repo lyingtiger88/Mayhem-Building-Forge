@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — normalized wall segments and deterministic wall-topology graph implemented**
+**Status: In progress — normalized wall topology and validated door/window opening integration implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -39,15 +39,20 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Convert grid-grown rooms into clean polygon boundaries.
 - [x] Convert treemap rectangles into the same canonical polygon representation.
 - [x] Normalize collinear room edges, split partial overlaps at shared endpoints, deduplicate shared wall pieces, merge compatible adjacent segments, and discard zero-length edges. (Further grid-growth edge-case coverage remains pending.)
-- [x] Classify exact matching room boundaries as exterior walls or shared internal walls.\n- [ ] Distinguish open circulation boundaries and split wall segments around door/open-plan openings.
+- [x] Classify exact matching room boundaries as exterior walls or shared internal walls.\n- [x] Split wall segments around modeled door/window openings and retain explicit opening-gap records.
+- [ ] Distinguish open circulation boundaries and non-door open-plan connections.
 - [ ] Add robust junction resolution for overlapping multi-room boundaries and non-manifold cases.
 - [x] Calculate boundary lengths and preserve room-to-room ownership for exact shared edges.
 - [x] Build a deterministic wall-topology graph with unique junction nodes and wall connectivity.
 - [x] Classify degree-2 straight/corner nodes and degree-3 T-junctions, degree-4 cross-junctions, endpoints, and complex junctions.
 - [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
-- [ ] Generate door candidates on valid shared boundaries and validate clear widths.
-- [ ] Generate window candidates only on exterior boundaries.
+- [x] Add semantic door/window opening records with stable IDs, dimensions, sill heights, and room ownership.
+- [x] Validate door/open-plan openings on shared walls and windows on exterior walls only.
+- [x] Reject openings outside wall-end clearances or overlapping existing openings.
+- [x] Split wall centerlines into solid segments and explicit opening gaps.
+- [x] Generate deterministic default door/window candidates from classified wall topology.
+- [ ] Connect generated openings to room access requirements and entrance orientation.
 - [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
 - [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
 - [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
