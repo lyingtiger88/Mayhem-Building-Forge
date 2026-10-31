@@ -25,9 +25,16 @@ struct PlannedRoom {
     double area_m2{};
 };
 
+enum class ResidentialLayoutProfile {
+    BalancedConventional,
+    OpenLiving,
+    PrivacyFirst
+};
+
 struct ResidentialLayout2D {
     double width_m{}, depth_m{};
     std::uint64_t seed{};
+    ResidentialLayoutProfile profile{ResidentialLayoutProfile::BalancedConventional};
     std::vector<PlannedRoom> rooms;
     std::vector<PlanOpening> openings;
 };
@@ -60,6 +67,17 @@ struct LayoutValidation {
     std::vector<std::string> errors;
     std::vector<std::string> warnings;
 };
+
+struct ResidentialVariation {
+    ResidentialLayoutProfile profile{ResidentialLayoutProfile::BalancedConventional};
+    ResidentialLayout2D layout;
+    LayoutValidation validation;
+};
+
+[[nodiscard]] const char* residential_profile_name(ResidentialLayoutProfile profile) noexcept;
+[[nodiscard]] std::vector<ResidentialVariation> generate_residential_variations(
+    const ResidentialLayoutSettings& settings = {},
+    const ArchitecturalValidationSettings& validation_settings = {});
 
 // First deterministic residential typology: public rooms to the south,
 // a full-width circulation spine, and private/service rooms to the north.
