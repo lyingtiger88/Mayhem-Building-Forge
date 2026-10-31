@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <set>
 
 namespace mbf {
 namespace {
@@ -134,6 +135,93 @@ LayoutValidation validate_residential_layout(const ResidentialLayout2D& p,double
             fail("Opening has invalid clear width.");
     }
     r.valid=r.errors.empty();return r;
+}
+
+
+LayoutValidation validate_architectural_layout(const ResidentialLayout2D& p,
+        const ArchitecturalValidationSettings& s) {
+    LayoutValidation result;
+    const auto fail=[&](const std::string& message){result.errors.push_back(message);};
+    if(!std::isfinite(s.minimum_room_area_m2)||s.minimum_room_area_m2<0.0||
+       !std::isfinite(s.minimum_room_width_m)||s.minimum_room_width_m<=0.0||
+       !std::isfinite(s.minimum_room_depth_m)||s.minimum_room_depth_m<=0.0||
+       !std::isfinite(s.maximum_room_aspect_ratio)||s.maximum_room_aspect_ratio<1.0||
+       !std::isfinite(s.minimum_door_clear_width_m)||s.minimum_door_clear_width_m<=0.0) {
+        fail("Architectural validation settings contain invalid limits.");
+        return result;
+    }
+    const auto base=validate_residential_layout(p,s.tolerance);
+    for(const auto& error:base.errors)fail(error);
+    if(p.rooms.empty()) {
+        result.valid=false;
+        result.quality_score=0.0;
+        return result;
+    }
+    std::set<RoomId> ids;
+    double score=100.0;
+    for(const auto& room:p.rooms) {
+        if(!ids.insert(room.id).second) {
+            fail("Room IDs must be unique.");
+            continue;
+        }
+        if(!std::isfinite(room.area_m2)||room.area_m2<s.minimum_room_area_m2-s.tolerance)
+            fail("Room "+room.name+" is below the configured minimum area.");
+        double min_x=std::numeric_limits<double>::max();
+        double min_y=min_x,max_x=-min_x,max_y=-min_x;
+        for(const auto& vertex:room.footprint.vertices) {
+            min_x=std::min(min_x,vertex.x);min_y=std::min(min_y,vertex.y);
+            max_x=std::max(max_x,vertex.x);max_y=std::max(max_y,vertex.y);
+        }
+        const double width=max_x-min_x,depth=max_y-min_y;
+        if(width<s.minimum_room_width_m-s.tolerance)
+            fail("Room "+room.name+" is narrower than the configured minimum width.");
+        if(depth<s.minimum_room_depth_m-s.tolerance)
+            fail("Room "+room.name+" is shallower than the configured minimum depth.");
+        if(room.role!=RoomRole::Hallway&&width>s.tolerance&&depth>s.tolerance) {
+            const double ratio=std::max(width/depth,depth/width);
+            if(ratio>s.maximum_room_aspect_ratio+s.tolerance)
+                fail("Room "+room.name+" exceeds the configured maximum aspect ratio.");
+            else score-=std::max(0.0,ratio-2.0)*1.5;
+        }
+        if(room.area_m2<s.minimum_room_area_m2*1.15)
+            result.warnings.push_back("Room "+room.name+" is close to the minimum area limit.");
+    }
+
+    std::vector<RoomId> reachable;
+    for(const auto& opening:p.openings) {
+        if(!ids.contains(opening.from_room)||!ids.contains(opening.to_room))
+            continue;
+        if(opening.kind==OpeningKind::EntranceDoor) {
+            if(opening.clear_width_m+s.tolerance<s.minimum_door_clear_width_m)
+                fail("Entrance door is narrower than the configured minimum clear width.");
+            if(std::find(reachable.begin(),reachable.end(),opening.from_room)==reachable.end())
+                reachable.push_back(opening.from_room);
+        } else if(opening.kind==OpeningKind::InteriorDoor||
+                  opening.kind==OpeningKind::OpenPlanConnection) {
+            if(opening.clear_width_m+s.tolerance<s.minimum_door_clear_width_m)
+                fail("Room access opening is narrower than the configured minimum clear width.");
+        }
+    }
+    for(std::size_t i=0;i<reachable.size();++i) {
+        const RoomId current=reachable[i];
+        for(const auto& opening:p.openings) {
+            if(opening.kind==OpeningKind::EntranceDoor)continue;
+            RoomId next=static_cast<RoomId>(-1);
+            if(opening.from_room==current)next=opening.to_room;
+            else if(opening.to_room==current)next=opening.from_room;
+            if(ids.contains(next)&&std::find(reachable.begin(),reachable.end(),next)==reachable.end())
+                reachable.push_back(next);
+        }
+    }
+    for(const auto& room:p.rooms)
+        if(std::find(reachable.begin(),reachable.end(),room.id)==reachable.end())
+            fail("Room "+room.name+" is not reachable from an exterior entrance.");
+
+    result.valid=result.errors.empty();
+    result.quality_score=result.valid?std::clamp(score,0.0,100.0):0.0;
+    if(result.valid&&result.quality_score<70.0)
+        result.warnings.push_back("Layout passed hard constraints but has a relatively low geometric quality score.");
+    return result;
 }
 
 bool export_residential_layout_svg(const ResidentialLayout2D& p,const std::string& path,std::string* error) {
