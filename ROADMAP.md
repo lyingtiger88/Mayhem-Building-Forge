@@ -96,11 +96,41 @@ Detailed specification: [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md).
 
 **Exit criteria:** Distinct facade variants can be generated without breaking structural geometry.
 
+## Dynamic interior physics and destructibility requirement (accepted architecture decision, 2026-10-31)
+
+Interior furnishings and interactable props must be independent, movable entities—not permanently baked into a room mesh or locked to their authored transform. This includes tables, chairs, beds, cabinets, appliances, lamps, decoration, and user-added props.
+
+Required capabilities:
+- Every prop has a stable semantic ID, asset reference, room association, transform, bounds, mass/inertia profile, friction/restitution, collision profile, mobility mode, and damage/destruction profile.
+- Support authoring-time placement and runtime manipulation: select, move, rotate, replace, remove, duplicate, and save/restore layout.
+- Runtime physics must support collisions, pushes, impacts, impulses, pressure/force effects, and blast-like radial forces. Props can slide, topple, tip, break, or remain fixed according to their physical profile and constraints.
+- Distinguish movable, constrained, anchored, and static props. Heavy furniture may resist motion; wall-mounted or built-in objects can use constraints; fragile decoration can break at lower thresholds.
+- Destructible props use pre-fractured Geometry Collections or an appropriate damage-state system. Not every asset should be fractured: use intact-to-damaged visual states for inexpensive objects and full Chaos fracture only where justified.
+- Damage can propagate only through explicitly modeled connections (for example, stacked or constrained objects); do not imply physically accurate structural propagation without a validated model.
+- Persist object transforms, damage state, missing/broken state, and relevant physics state so the room does not reset unexpectedly after reload or save/load.
+- Provide performance tiers: full simulation nearby, simplified/low-frequency or sleeping physics at distance, and static/baked representation when interaction is not required. Use instancing only for props that do not need independent physics or damage.
+- Keep authoring metadata and stable IDs in MayhemBuildingData; Unreal owns live simulation state and reports permitted edits/state changes back through the synchronization layer.
+
+Unreal implementation direction:
+- Use Chaos rigid-body simulation for movable furniture and props.
+- Use Physics Constraints for attached, hinged, stacked, or limited-motion objects where appropriate.
+- Use Chaos Geometry Collections and damage thresholds for selected destructible assets; use Physics Fields for localized force/strain effects such as impacts and blast impulses.
+- Expose interaction and damage controls through the dynamic Blueprint building actor, while implementing high-frequency physics and state management in native C++ components.
+- Add a per-asset policy: `Static`, `Movable`, `Constrained`, `Destructible`, or `Hybrid`.
+
+This is an accepted product requirement and architecture decision, not an implemented feature yet. It extends Milestone 5 (Complete Interior Generation) and Milestone 7 (Unreal Engine Integration); data IDs, prop metadata, persistence, and performance policy must be designed before the Unreal runtime implementation.
+
 ## Milestone 5 — Complete interior generation
 **Status: Planned**
 
 - [ ] Room function profiles and furnishing templates.
+- [ ] Independent semantic prop entities with stable IDs, transforms, room association, physical properties, mobility and damage profiles.
+- [ ] Editable furniture placement and runtime move/rotate/replace/remove workflows with layout persistence.
 - [ ] Furniture footprints, clearance envelopes, and circulation paths.
+- [ ] Movable, constrained, anchored, and static prop behavior; impact, impulse, pressure and radial-force responses.
+- [ ] Selective destructibility for suitable props, including damage states and Chaos Geometry Collections where appropriate.
+- [ ] Persist prop transforms and damage/broken states across save/load.
+- [ ] Distance-based physics budgets, sleep/disable policies, and instancing for non-interactive repeated props.
 - [ ] Kitchens, bathrooms, bedrooms, offices, retail, and shared spaces.
 - [ ] Asset placement, rotation, scale, and collision checks.
 - [ ] Lighting and navigation-ready metadata.
@@ -155,7 +185,9 @@ This is a product requirement and architecture decision, not an implemented feat
 - [ ] Separate editor-time rebuild and packaged runtime generation paths.
 - [ ] Optional bake-to-optimized-assets workflow with source linkage.
 - [ ] Import/bake workflow for generated building data.
-- [ ] Instanced props and material mapping.
+- [ ] Instanced props and material mapping, excluding independently simulated/damageable props.
+- [ ] Chaos rigid-body, constraints, Physics Fields, and selective Geometry Collection destruction integration.
+- [ ] Blueprint/C++ runtime controls for prop interaction, damage, and persistence.
 - [ ] Collision, navigation, LOD/HLOD, and Nanite suitability checks.
 - [ ] Runtime generation API with explicit budgets.
 - [ ] World Partition and streaming integration.
