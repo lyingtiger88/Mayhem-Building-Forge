@@ -245,6 +245,77 @@ std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geo
     return result;
 }
 
+
+WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry,double tolerance) {
+    WallTopology2D graph;
+    graph.walls=classify_boundaries(geometry,tolerance);
+    struct EndpointRef { Point2 point; std::uint64_t wall_id; };
+    std::vector<EndpointRef> endpoints;
+    for(const auto& wall:graph.walls) {
+        if(wall.id==0U || wall.length_m<=tolerance ||
+           std::abs(distance(wall.start,wall.end)-wall.length_m)>std::max(tolerance,wall.length_m*1e-8)) {
+            graph.valid=false;
+            graph.diagnostics.push_back("Wall has an invalid ID, length, or endpoint geometry.");
+            continue;
+        }
+        endpoints.push_back({wall.start,wall.id});
+        endpoints.push_back({wall.end,wall.id});
+    }
+    const auto close=[&](Point2 a,Point2 b){
+        return distance(a,b)<=tolerance;
+    };
+    for(const auto& endpoint:endpoints) {
+        auto it=std::find_if(graph.junctions.begin(),graph.junctions.end(),
+            [&](const WallNode2D& node){return close(node.position,endpoint.point);});
+        if(it==graph.junctions.end()) {
+            WallNode2D node;
+            node.id=static_cast<std::uint64_t>(graph.junctions.size()+1U);
+            node.position=endpoint.point;
+            node.connected_wall_ids.push_back(endpoint.wall_id);
+            graph.junctions.push_back(std::move(node));
+        } else if(std::find(it->connected_wall_ids.begin(),it->connected_wall_ids.end(),
+                            endpoint.wall_id)==it->connected_wall_ids.end()) {
+            it->connected_wall_ids.push_back(endpoint.wall_id);
+        }
+    }
+    for(auto& node:graph.junctions) {
+        std::sort(node.connected_wall_ids.begin(),node.connected_wall_ids.end());
+        const auto degree=node.connected_wall_ids.size();
+        if(degree==1U) node.kind=WallJunctionKind2D::Endpoint;
+        else if(degree==2U) {
+            const auto find_wall=[&](std::uint64_t id)->const BoundarySegment2D*{
+                const auto it=std::find_if(graph.walls.begin(),graph.walls.end(),
+                    [&](const BoundarySegment2D& wall){return wall.id==id;});
+                return it==graph.walls.end()?nullptr:&*it;
+            };
+            const auto* a=find_wall(node.connected_wall_ids[0]);
+            const auto* b=find_wall(node.connected_wall_ids[1]);
+            if(!a||!b) {
+                graph.valid=false;
+                graph.diagnostics.push_back("Junction references a missing wall.");
+                continue;
+            }
+            const Point2 va=close(a->start,node.position)
+                ?Point2{a->end.x-node.position.x,a->end.y-node.position.y}
+                :Point2{a->start.x-node.position.x,a->start.y-node.position.y};
+            const Point2 vb=close(b->start,node.position)
+                ?Point2{b->end.x-node.position.x,b->end.y-node.position.y}
+                :Point2{b->start.x-node.position.x,b->start.y-node.position.y};
+            const double denom=std::max(tolerance,distance({0,0},va)*distance({0,0},vb));
+            const double cosine=(va.x*vb.x+va.y*vb.y)/denom;
+            node.kind=std::abs(cosine+1.0)<=1e-6
+                ?WallJunctionKind2D::Straight:WallJunctionKind2D::Corner;
+        } else if(degree==3U) node.kind=WallJunctionKind2D::Tee;
+        else if(degree==4U) node.kind=WallJunctionKind2D::Cross;
+        else node.kind=WallJunctionKind2D::Complex;
+    }
+    if(graph.walls.empty()) {
+        graph.valid=false;
+        graph.diagnostics.push_back("Wall topology contains no wall segments.");
+    }
+    return graph;
+}
+
 double Ring2::signed_area_m2() const noexcept {
     if (vertices.size() < 3U) return 0.0;
     double twice_area = 0.0;
