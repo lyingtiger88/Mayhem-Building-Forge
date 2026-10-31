@@ -134,44 +134,113 @@ std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geo
             for(std::size_t i=0;i<ring.vertices.size();++i)
                 edges.push_back({ring.vertices[i],ring.vertices[(i+1U)%ring.vertices.size()],room.id});
 
-    const auto near=[&](double a,double b){return std::abs(a-b)<=tolerance;};
-    const auto same_segment=[&](const EdgeRef& a,const EdgeRef& b){
-        return (near(a.a.x,b.b.x)&&near(a.a.y,b.b.y)&&near(a.b.x,b.a.x)&&near(a.b.y,b.a.y)) ||
-               (near(a.a.x,b.a.x)&&near(a.a.y,b.a.y)&&near(a.b.x,b.b.x)&&near(a.b.y,b.b.y));
+    const auto length=[](Point2 a,Point2 b){return std::hypot(b.x-a.x,b.y-a.y);};
+    const auto cross=[](Point2 a,Point2 b,Point2 c){
+        return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
     };
+    const auto near=[&](double a,double b){return std::abs(a-b)<=tolerance;};
+    const auto point_at=[](Point2 a,Point2 b,double t){
+        return Point2{a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t};
+    };
+    const auto on_outer=[&](Point2 a,Point2 b){
+        return (near(a.x,0.0)&&near(b.x,0.0)) ||
+               (near(a.x,geometry.width_m)&&near(b.x,geometry.width_m)) ||
+               (near(a.y,0.0)&&near(b.y,0.0)) ||
+               (near(a.y,geometry.depth_m)&&near(b.y,geometry.depth_m));
+    };
+
+    struct Piece { Point2 a,b; RoomId ra,rb; BoundaryKind2D kind; };
+    std::vector<Piece> pieces;
+    for(const auto& edge:edges) {
+        const double len=length(edge.a,edge.b);
+        if(len<=tolerance) continue;
+        const double dx=(edge.b.x-edge.a.x)/len,dy=(edge.b.y-edge.a.y)/len;
+        std::vector<double> cuts{0.0,1.0};
+        for(const auto& other:edges) {
+            if(other.room==edge.room) continue;
+            if(std::abs(cross(edge.a,edge.b,other.a))>tolerance*len ||
+               std::abs(cross(edge.a,edge.b,other.b))>tolerance*len) continue;
+            const double t0=((other.a.x-edge.a.x)*dx+(other.a.y-edge.a.y)*dy)/len;
+            const double t1=((other.b.x-edge.a.x)*dx+(other.b.y-edge.a.y)*dy)/len;
+            const double lo=std::max(0.0,std::min(t0,t1));
+            const double hi=std::min(len,std::max(t0,t1));
+            if(hi-lo>tolerance) { cuts.push_back(lo/len); cuts.push_back(hi/len); }
+        }
+        std::sort(cuts.begin(),cuts.end());
+        cuts.erase(std::unique(cuts.begin(),cuts.end(),[&](double a,double b){
+            return std::abs(a-b)<=tolerance/len;
+        }),cuts.end());
+        for(std::size_t i=1;i<cuts.size();++i) {
+            const double t0=cuts[i-1],t1=cuts[i];
+            if((t1-t0)*len<=tolerance) continue;
+            const Point2 a=point_at(edge.a,edge.b,t0),b=point_at(edge.a,edge.b,t1);
+            const Point2 mid=point_at(a,b,0.5);
+            RoomId partner=static_cast<RoomId>(-1);
+            for(const auto& other:edges) {
+                if(other.room==edge.room) continue;
+                if(std::abs(cross(other.a,other.b,mid))>tolerance*length(other.a,other.b)) continue;
+                const double olen=length(other.a,other.b);
+                if(olen<=tolerance) continue;
+                const double proj=((mid.x-other.a.x)*(other.b.x-other.a.x)+
+                                   (mid.y-other.a.y)*(other.b.y-other.a.y))/(olen*olen);
+                if(proj>=-tolerance/olen && proj<=1.0+tolerance/olen) {
+                    partner=other.room; break;
+                }
+            }
+            const bool exterior=on_outer(a,b);
+            if(partner==static_cast<RoomId>(-1) && !exterior) continue;
+            if(partner!=static_cast<RoomId>(-1) && partner<edge.room) continue;
+            pieces.push_back({a,b,edge.room,partner,
+                partner==static_cast<RoomId>(-1)?BoundaryKind2D::ExteriorWall:BoundaryKind2D::SharedWall});
+        }
+    }
+
+    // Deduplicate pieces emitted from both room sides, then merge collinear
+    // adjacent pieces with identical semantic ownership and boundary kind.
+    const auto same_undirected=[&](const Piece&a,const Piece&b){
+        return (near(a.a.x,b.a.x)&&near(a.a.y,b.a.y)&&near(a.b.x,b.b.x)&&near(a.b.y,b.b.y)) ||
+               (near(a.a.x,b.b.x)&&near(a.a.y,b.b.y)&&near(a.b.x,b.a.x)&&near(a.b.y,b.a.y));
+    };
+    std::vector<Piece> unique;
+    for(const auto& piece:pieces) {
+        if(std::none_of(unique.begin(),unique.end(),[&](const Piece& p){return same_undirected(p,piece);}))
+            unique.push_back(piece);
+    }
+    bool changed=true;
+    while(changed) {
+        changed=false;
+        for(std::size_t i=0;i<unique.size()&&!changed;++i) {
+            for(std::size_t j=i+1;j<unique.size();++j) {
+                auto&a=unique[i];const auto&b=unique[j];
+                if(a.kind!=b.kind||a.ra!=b.ra||a.rb!=b.rb) continue;
+                if(std::abs(cross(a.a,a.b,b.a))>tolerance*length(a.a,a.b)||
+                   std::abs(cross(a.a,a.b,b.b))>tolerance*length(a.a,a.b)) continue;
+                Point2 shared{};bool touches=false;
+                if(near(a.a.x,b.a.x)&&near(a.a.y,b.a.y)){shared=a.a;touches=true;}
+                else if(near(a.a.x,b.b.x)&&near(a.a.y,b.b.y)){shared=a.a;touches=true;}
+                else if(near(a.b.x,b.a.x)&&near(a.b.y,b.a.y)){shared=a.b;touches=true;}
+                else if(near(a.b.x,b.b.x)&&near(a.b.y,b.b.y)){shared=a.b;touches=true;}
+                if(!touches) continue;
+                std::vector<Point2> ends;
+                for(Point2 q:{a.a,a.b,b.a,b.b})
+                    if(length(q,shared)>tolerance) ends.push_back(q);
+                if(ends.size()!=2U) continue;
+                a.a=ends[0];a.b=ends[1];
+                unique.erase(unique.begin()+static_cast<std::ptrdiff_t>(j));
+                changed=true;break;
+            }
+        }
+    }
+
     std::vector<BoundarySegment2D> result;
-    std::vector<bool> consumed(edges.size(),false);
-    std::uint64_t next_id=1;
-    for(std::size_t i=0;i<edges.size();++i) {
-        if(consumed[i]) continue;
-        const auto& e=edges[i];
-        std::size_t partner=edges.size();
-        for(std::size_t j=i+1U;j<edges.size();++j) {
-            if(consumed[j]||edges[j].room==e.room) continue;
-            if(same_segment(e,edges[j])) { partner=j; break; }
-        }
-        const double length=distance(e.a,e.b);
-        if(length<=tolerance) { consumed[i]=true; continue; }
-        const bool exterior=(near(e.a.x,0.0)&&near(e.b.x,0.0)) ||
-            (near(e.a.x,geometry.width_m)&&near(e.b.x,geometry.width_m)) ||
-            (near(e.a.y,0.0)&&near(e.b.y,0.0)) ||
-            (near(e.a.y,geometry.depth_m)&&near(e.b.y,geometry.depth_m));
-        // An interior edge is emitted only when the opposite room owns the
-        // exact same segment. Partial/collinear edge overlaps are handled by
-        // a later edge-normalization step, not guessed here.
-        if(!exterior && partner==edges.size()) { consumed[i]=true; continue; }
+    result.reserve(unique.size());
+    std::uint64_t id=1;
+    for(const auto& p:unique) {
         BoundarySegment2D boundary;
-        boundary.id=next_id++;
-        boundary.start=e.a; boundary.end=e.b; boundary.length_m=length;
-        boundary.kind=exterior?BoundaryKind2D::ExteriorWall:BoundaryKind2D::SharedWall;
-        boundary.room_a=e.room;
-        if(partner<edges.size()) {
-            boundary.kind=BoundaryKind2D::SharedWall;
-            boundary.room_b=edges[partner].room;
-            consumed[partner]=true;
-        }
+        boundary.id=id++;boundary.start=p.a;boundary.end=p.b;
+        boundary.length_m=length(p.a,p.b);boundary.kind=p.kind;
+        boundary.room_a=p.ra;boundary.room_b=p.rb;
         result.push_back(boundary);
-        consumed[i]=true;
     }
     return result;
 }
