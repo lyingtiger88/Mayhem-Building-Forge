@@ -2,10 +2,13 @@
 #include "mbf/floor_plan.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <random>
+#include <numeric>
+#include <string>
 #include <stdexcept>
 #include <vector>
 namespace mbf {
@@ -36,95 +39,185 @@ FloorPlan FloorPlanGenerator::generate_grid_growth(const GenerationSettings&s,co
  for(auto&r:p.rooms){auto minx=cols,miny=rows,maxx=0U,maxy=0U;for(const auto&c:r.cells){minx=std::min(minx,c.x);miny=std::min(miny,c.y);maxx=std::max(maxx,c.x);maxy=std::max(maxy,c.y);}r.bounds={static_cast<double>(minx)*s.width_m/cols,static_cast<double>(miny)*s.depth_m/rows,static_cast<double>(maxx-minx+1U)*s.width_m/cols,static_cast<double>(maxy-miny+1U)*s.depth_m/rows};}
  calculate_adjacency(p);return p;
 }
-FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings& s,
-                                                       const std::vector<RoomSpec>& rs) const {
-    check(s, rs);
-    const auto room_weights = weights(rs);
+namespace {
+RoomRole resolved_role(const RoomSpec& room) {
+    if (room.role != RoomRole::Auto) return room.role;
+    std::string name = room.name;
+    std::transform(name.begin(), name.end(), name.begin(),
+        [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    if (name.find("living") != std::string::npos || name.find("lounge") != std::string::npos ||
+        name.find("reception") != std::string::npos || name.find("sitting") != std::string::npos)
+        return RoomRole::Living;
+    if (name.find("kitchen") != std::string::npos) return RoomRole::Kitchen;
+    if (name.find("bed") != std::string::npos || name.find("sleep") != std::string::npos)
+        return RoomRole::Bedroom;
+    if (name.find("bath") != std::string::npos || name.find("toilet") != std::string::npos ||
+        name == "wc") return RoomRole::Bathroom;
+    if (name.find("hall") != std::string::npos || name.find("corridor") != std::string::npos ||
+        name.find("foyer") != std::string::npos || name.find("entry") != std::string::npos)
+        return RoomRole::Hallway;
+    return RoomRole::Auto;
+}
 
+double shared_length(const Rect& a, const Rect& b) {
+    constexpr double eps = 1e-7;
+    const double y_overlap = std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
+    const double x_overlap = std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x);
+    if ((std::abs(a.x + a.width - b.x) < eps || std::abs(b.x + b.width - a.x) < eps) &&
+        y_overlap > eps) return y_overlap;
+    if ((std::abs(a.y + a.height - b.y) < eps || std::abs(b.y + b.height - a.y) < eps) &&
+        x_overlap > eps) return x_overlap;
+    return 0.0;
+}
+
+double pair_preference(RoomRole a, RoomRole b) {
+    if ((a == RoomRole::Living && b == RoomRole::Kitchen) ||
+        (b == RoomRole::Living && a == RoomRole::Kitchen)) return 12.0;
+    if ((a == RoomRole::Living && b == RoomRole::Hallway) ||
+        (b == RoomRole::Living && a == RoomRole::Hallway)) return 10.0;
+    if ((a == RoomRole::Hallway && (b == RoomRole::Bedroom || b == RoomRole::Bathroom)) ||
+        (b == RoomRole::Hallway && (a == RoomRole::Bedroom || a == RoomRole::Bathroom))) return 11.0;
+    if ((a == RoomRole::Kitchen && b == RoomRole::Hallway) ||
+        (b == RoomRole::Kitchen && a == RoomRole::Hallway)) return 5.0;
+    if ((a == RoomRole::Bedroom && b == RoomRole::Bathroom) ||
+        (b == RoomRole::Bedroom && a == RoomRole::Bathroom)) return 2.0;
+    if ((a == RoomRole::Living && b == RoomRole::Bathroom) ||
+        (b == RoomRole::Living && a == RoomRole::Bathroom)) return -7.0;
+    if ((a == RoomRole::Living && b == RoomRole::Bedroom) ||
+        (b == RoomRole::Living && a == RoomRole::Bedroom)) return -2.0;
+    return 0.0;
+}
+
+double layout_score(const FloorPlan& plan, const std::vector<RoomRole>& roles) {
+    double score = 0.0;
+    const double min_dimension = std::min(plan.width_m, plan.depth_m);
+    const double cx = plan.width_m * 0.5, cy = plan.depth_m * 0.5;
+    for (std::size_t i = 0; i < plan.rooms.size(); ++i) {
+        const auto& room = plan.rooms[i];
+        const auto& r = room.bounds;
+        const double ratio = std::max(r.width / r.height, r.height / r.width);
+        if (ratio > 2.5) score -= (ratio - 2.5) * 1.8;
+        if (roles[i] == RoomRole::Living) {
+            const double dx = (r.x + r.width * 0.5 - cx) / std::max(plan.width_m, 1e-9);
+            const double dy = (r.y + r.height * 0.5 - cy) / std::max(plan.depth_m, 1e-9);
+            score -= 9.0 * std::sqrt(dx * dx + dy * dy);
+        } else if (roles[i] == RoomRole::Hallway) {
+            const double dx = (r.x + r.width * 0.5 - cx) / std::max(plan.width_m, 1e-9);
+            const double dy = (r.y + r.height * 0.5 - cy) / std::max(plan.depth_m, 1e-9);
+            score -= 3.0 * std::sqrt(dx * dx + dy * dy);
+        } else if (roles[i] == RoomRole::Bedroom) {
+            const double edge_gap = std::min({r.x, r.y, plan.width_m - (r.x + r.width),
+                                              plan.depth_m - (r.y + r.height)});
+            score -= 5.0 * edge_gap / std::max(min_dimension, 1e-9);
+        }
+        for (std::size_t j = i + 1; j < plan.rooms.size(); ++j) {
+            const double preference = pair_preference(roles[i], roles[j]);
+            if (preference == 0.0) continue;
+            const double length = shared_length(r, plan.rooms[j].bounds);
+            const double scale = std::max(0.5, std::min({r.width, r.height,
+                                                         plan.rooms[j].bounds.width,
+                                                         plan.rooms[j].bounds.height}));
+            if (length > 0.0) score += preference * (1.0 + std::min(length / scale, 1.0));
+            else if (preference > 0.0) score -= preference * 1.15;
+        }
+    }
+    return score;
+}
+
+FloorPlan make_rectangular_candidate(const GenerationSettings& s,
+                                     const std::vector<RoomSpec>& rooms,
+                                     const std::vector<std::size_t>& order,
+                                     std::uint64_t orientation_mask) {
+    const auto room_weights = weights(rooms);
     FloorPlan plan;
     plan.seed = s.seed;
     plan.width_m = s.width_m;
     plan.depth_m = s.depth_m;
     plan.algorithm = FloorPlanAlgorithm::SquarifiedTreemap;
-
     Rect remaining{0.0, 0.0, s.width_m, s.depth_m};
-    const double total_area = s.width_m * s.depth_m;
-
-    const auto aspect_ratio = [](const Rect& rect) {
-        if (rect.width <= 0.0 || rect.height <= 0.0)
-            return std::numeric_limits<double>::infinity();
-        return std::max(rect.width / rect.height, rect.height / rect.width);
-    };
-
-    for (std::size_t i = 0; i < rs.size(); ++i) {
+    for (std::size_t position = 0; position < order.size(); ++position) {
+        const std::size_t room_index = order[position];
         Rect placed{};
-        if (i + 1U == rs.size()) {
+        if (position + 1U == order.size()) {
             placed = remaining;
         } else {
-            const double target_area = total_area * room_weights[i];
-            const double vertical_width = target_area / remaining.height;
-            const double horizontal_height = target_area / remaining.width;
-
-            double vertical_score = std::numeric_limits<double>::infinity();
-            double horizontal_score = std::numeric_limits<double>::infinity();
-
-            if (vertical_width > 1e-9 && vertical_width < remaining.width - 1e-9) {
-                const Rect candidate{remaining.x, remaining.y, vertical_width, remaining.height};
-                const Rect rest{remaining.x + vertical_width, remaining.y,
-                                remaining.width - vertical_width, remaining.height};
-                vertical_score = std::max(aspect_ratio(candidate), aspect_ratio(rest));
-            }
-            if (horizontal_height > 1e-9 && horizontal_height < remaining.height - 1e-9) {
-                const Rect candidate{remaining.x, remaining.y, remaining.width, horizontal_height};
-                const Rect rest{remaining.x, remaining.y + horizontal_height,
-                                remaining.width, remaining.height - horizontal_height};
-                horizontal_score = std::max(aspect_ratio(candidate), aspect_ratio(rest));
-            }
-
-            if (!std::isfinite(vertical_score) && !std::isfinite(horizontal_score))
-                throw std::runtime_error("Could not partition the remaining building footprint.");
-
-            if (vertical_score <= horizontal_score) {
-                placed = {remaining.x, remaining.y, vertical_width, remaining.height};
-                remaining.x += vertical_width;
-                remaining.width -= vertical_width;
+            const double target_area = s.width_m * s.depth_m * room_weights[room_index];
+            const bool horizontal = ((orientation_mask >> position) & 1ULL) != 0ULL;
+            if (horizontal) {
+                const double cut = target_area / remaining.width;
+                if (cut <= 1e-9 || cut >= remaining.height - 1e-9)
+                    throw std::runtime_error("Invalid horizontal room partition.");
+                placed = {remaining.x, remaining.y, remaining.width, cut};
+                remaining.y += cut;
+                remaining.height -= cut;
             } else {
-                placed = {remaining.x, remaining.y, remaining.width, horizontal_height};
-                remaining.y += horizontal_height;
-                remaining.height -= horizontal_height;
+                const double cut = target_area / remaining.height;
+                if (cut <= 1e-9 || cut >= remaining.width - 1e-9)
+                    throw std::runtime_error("Invalid vertical room partition.");
+                placed = {remaining.x, remaining.y, cut, remaining.height};
+                remaining.x += cut;
+                remaining.width -= cut;
             }
         }
-
-        plan.rooms.push_back({
-            static_cast<RoomId>(i), rs[i].name, rs[i].target_area_m2,
-            placed.area(), placed, {}
-        });
+        plan.rooms.resize(rooms.size());
+        plan.rooms[room_index] = {static_cast<RoomId>(room_index), rooms[room_index].name,
+            rooms[room_index].target_area_m2, placed.area(), placed, {}, resolved_role(rooms[room_index])};
     }
-
-    constexpr double epsilon = 1e-7;
-    for (std::size_t i = 0; i < plan.rooms.size(); ++i) {
-        for (std::size_t j = i + 1U; j < plan.rooms.size(); ++j) {
-            const auto& a = plan.rooms[i].bounds;
-            const auto& b = plan.rooms[j].bounds;
-            const double vertical_overlap =
-                std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
-            const double horizontal_overlap =
-                std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x);
-
-            if ((std::abs(a.x + a.width - b.x) < epsilon ||
-                 std::abs(b.x + b.width - a.x) < epsilon) && vertical_overlap > epsilon) {
-                plan.adjacency.push_back({
-                    static_cast<RoomId>(i), static_cast<RoomId>(j), 1U
-                });
-            } else if ((std::abs(a.y + a.height - b.y) < epsilon ||
-                        std::abs(b.y + b.height - a.y) < epsilon) &&
-                       horizontal_overlap > epsilon) {
-                plan.adjacency.push_back({
-                    static_cast<RoomId>(i), static_cast<RoomId>(j), 1U
-                });
-            }
-        }
-    }
+    for (std::size_t i = 0; i < plan.rooms.size(); ++i)
+        for (std::size_t j = i + 1; j < plan.rooms.size(); ++j)
+            if (shared_length(plan.rooms[i].bounds, plan.rooms[j].bounds) > 1e-7)
+                plan.adjacency.push_back({static_cast<RoomId>(i), static_cast<RoomId>(j), 1U});
     return plan;
+}
+} // namespace
+
+FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings& s,
+                                                const std::vector<RoomSpec>& rs) const {
+    check(s, rs);
+    std::vector<RoomRole> roles;
+    roles.reserve(rs.size());
+    for (const auto& room : rs) roles.push_back(resolved_role(room));
+
+    FloorPlan best;
+    double best_score = -std::numeric_limits<double>::infinity();
+    const std::size_t n = rs.size();
+    std::vector<std::size_t> order(n);
+    std::iota(order.begin(), order.end(), 0U);
+
+    const auto consider = [&](const std::vector<std::size_t>& candidate_order,
+                              std::uint64_t mask, FloorPlan& current_best,
+                              double& current_score) {
+        try {
+            auto candidate = make_rectangular_candidate(s, rs, candidate_order, mask);
+            const double score = layout_score(candidate, roles);
+            if (score > current_score + 1e-10) {
+                current_score = score;
+                current_best = std::move(candidate);
+            }
+        } catch (const std::runtime_error&) {
+            // Invalid cuts are simply not candidates.
+        }
+    };
+
+    if (n <= 7U) {
+        const std::uint64_t masks = 1ULL << (n - 1U);
+        do {
+            for (std::uint64_t mask = 0; mask < masks; ++mask)
+                consider(order, mask, best, best_score);
+        } while (std::next_permutation(order.begin(), order.end()));
+    } else {
+        // Bound search cost for larger briefs while keeping deterministic,
+        // role-aware candidate exploration.
+        std::mt19937_64 rng(s.seed);
+        for (std::size_t attempt = 0; attempt < 512U; ++attempt) {
+            std::shuffle(order.begin(), order.end(), rng);
+            const std::uint64_t mask = rng();
+            consider(order, mask, best, best_score);
+        }
+    }
+
+    if (best.rooms.empty())
+        throw std::runtime_error("Could not produce a valid rectangular room layout.");
+    return best;
 }
 } // namespace mbf
