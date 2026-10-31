@@ -34,13 +34,13 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
 - [x] Add first standalone polygon primitives: regular polygons, rectangles, concave polygons, area, centroid, containment, self-intersection validation, and shared-boundary length.
-- [x] Add a first balanced residential zoning prototype using explicit room polygons, a south entrance, public/private bands, a circulation spine, and modeled openings.\n- [ ] Canonical 2D coordinate system in metres, with explicit origin and axis conventions.
-- [ ] Polygon, ring, line-segment, and opening data types in the engine-neutral model.
+- [x] Add a first balanced residential zoning prototype using explicit room polygons, a south entrance, public/private bands, a circulation spine, and modeled openings.\n- [x] Canonical 2D coordinate frame: metres, south-west origin, +X east, +Y north.
+- [x] Polygon, ring, point, and boundary-segment data types in the engine-neutral model.
 - [x] Convert grid-grown rooms into clean polygon boundaries.
 - [x] Convert treemap rectangles into the same canonical polygon representation.
 - [ ] Merge collinear edges and remove duplicate or zero-length segments. (Grid-growth boundary cleanup remains pending.)
-- [ ] Classify boundaries as exterior walls, shared internal walls, or open circulation boundaries.
-- [ ] Calculate shared wall lengths and preserve room-to-wall relationships.
+- [x] Classify exact matching room boundaries as exterior walls or shared internal walls.\n- [ ] Distinguish open circulation boundaries and split wall segments around door/open-plan openings.
+- [x] Calculate boundary lengths and preserve room-to-room ownership for exact shared edges.
 - [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [ ] Generate door candidates on valid shared boundaries and validate clear widths.
