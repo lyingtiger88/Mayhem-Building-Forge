@@ -72,7 +72,8 @@ struct Geometry2DResult {
 };
 
 [[nodiscard]] Geometry2DResult build_geometry_2d(const FloorPlan& plan);
-[[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);\n[[nodiscard]] WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
+[[nodiscard]] std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
+[[nodiscard]] WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry, double tolerance = 1e-7);
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
