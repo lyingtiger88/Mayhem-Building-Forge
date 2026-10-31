@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — role-aware spatial layout and SVG preview implemented**
+**Status: In progress — topology-first residential prototype with explicit south entrance implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -40,7 +40,7 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [ ] Merge collinear edges and remove duplicate or zero-length segments. (Grid-growth boundary cleanup remains pending.)
 - [ ] Classify boundaries as exterior walls, shared internal walls, or open circulation boundaries.
 - [ ] Calculate shared wall lengths and preserve room-to-wall relationships.
-- [ ] Define building entrance, corridors, room access, and circulation graph.
+- [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.\n- [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [ ] Generate door candidates on valid shared boundaries and validate clear widths.
 - [ ] Generate window candidates only on exterior boundaries.
 - [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.\n- [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
@@ -50,7 +50,7 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-Current sample uses a deterministic candidate-search over rectangular guillotine partitions. Room roles (living, kitchen, bedroom, bathroom, hallway) guide adjacency and placement scoring; the selected plan prioritizes living–kitchen and living–hallway connections, hallway access to bedroom/bathroom, a perimeter bedroom, and avoidance of direct living–bathroom adjacency. Regression tests cover these functional relationships as well as bounds, non-overlap, area conservation, and aspect ratios. Grid-growth polygon extraction remains available for internal experiments. Wall classification, openings, circulation, and stronger topology validation remain planned. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
