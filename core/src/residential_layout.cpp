@@ -128,7 +128,7 @@ std::vector<ResidentialVariation> generate_residential_variations(
         {ResidentialLayoutProfile::BalancedConventional,
          base.public_zone_depth_ratio,base.circulation_depth_ratio,
          base.living_width_ratio,base.bedroom_width_ratio},
-        {ResidentialLayoutProfile::OpenLiving,0.67,0.13,0.60,0.58},
+        {ResidentialLayoutProfile::OpenLiving,0.64,0.17,0.60,0.58},
         {ResidentialLayoutProfile::PrivacyFirst,0.55,0.22,0.48,0.68}
     };
 
