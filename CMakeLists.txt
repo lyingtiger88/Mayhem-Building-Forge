@@ -7,6 +7,7 @@ add_library(mbf_core
     core/src/generator.cpp
     core/src/geometry2d.cpp
     core/src/polygon.cpp
+    core/src/residential_layout.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
 target_include_directories(mbf_core PUBLIC core/include)
@@ -28,4 +29,6 @@ if(MBF_BUILD_EXAMPLES)
     target_link_libraries(mbf_generate_sample PRIVATE MBF::Core)
     add_executable(mbf_polygon_demo examples/polygon_demo.cpp)
     target_link_libraries(mbf_polygon_demo PRIVATE MBF::Core)
+    add_executable(mbf_house_layout_demo examples/house_layout_demo.cpp)
+    target_link_libraries(mbf_house_layout_demo PRIVATE MBF::Core)
 endif()
