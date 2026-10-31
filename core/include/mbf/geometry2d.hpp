@@ -24,6 +24,7 @@ struct RoomGeometry2D {
 struct BuildingGeometry2D {
     std::uint32_t schema_version{1};
     double width_m{}, depth_m{};
+    Entrance2D entrance;
     std::vector<RoomGeometry2D> rooms;
 };
 
