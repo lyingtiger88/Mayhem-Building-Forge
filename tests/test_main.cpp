@@ -1,6 +1,7 @@
 #include "mbf/floor_plan.hpp"
 #include "mbf/generator.hpp"
 #include "mbf/geometry2d.hpp"
+#include "mbf/polygon.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -78,9 +79,32 @@ void topology_first(){
  req(geometry.valid,"topology-first plan converts to 2D geometry");
  req(geometry.geometry.entrance.defined,"canonical geometry preserves entrance");
 }
+
+void polygon_engine(){
+ using namespace mbf;
+ const auto rect=make_rectangle(0,0,4,3);
+ req(validate_polygon(rect).valid,"rectangle polygon validates");
+ req(std::abs(polygon_area(rect)-12.0)<1e-9,"rectangle area is correct");
+ const auto tri=make_regular_polygon({0,0},2,3);
+ const auto pent=make_regular_polygon({0,0},2,5);
+ const auto hex=make_regular_polygon({0,0},2,6);
+ req(validate_polygon(tri).valid&&validate_polygon(pent).valid&&validate_polygon(hex).valid,"regular triangle pentagon hexagon validate");
+ req(polygon_area(hex)>polygon_area(pent)&&polygon_area(pent)>polygon_area(tri),"regular polygon areas increase for same circumradius");
+ const Polygon2D concave{{{0,0},{4,0},{4,1},{1,1},{1,4},{0,4}}};
+ req(validate_polygon(concave).valid,"concave L polygon validates");
+ req(std::abs(polygon_area(concave)-7.0)<1e-9,"concave L area is correct");
+ req(point_in_polygon(concave,{0.5,3.0}),"point inside concave polygon detected");
+ req(!point_in_polygon(concave,{3.0,3.0}),"point in concave notch rejected");
+ const auto left=make_rectangle(0,0,3,2),right=make_rectangle(3,0,2,2);
+ req(std::abs(shared_boundary_length(left,right)-2.0)<1e-9,"shared boundary length detected");
+ const Polygon2D bowtie{{{0,0},{2,2},{0,2},{2,0}}};
+ req(!validate_polygon(bowtie).valid,"self-intersecting polygon rejected");
+ const auto center=polygon_centroid(rect);
+ req(std::abs(center.x-2.0)<1e-9&&std::abs(center.y-1.5)<1e-9,"rectangle centroid is correct");
+}
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
