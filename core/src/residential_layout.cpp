@@ -104,6 +104,59 @@ ResidentialLayout2D generate_balanced_residential_layout(const ResidentialLayout
     return p;
 }
 
+
+const char* residential_profile_name(ResidentialLayoutProfile profile) noexcept {
+    switch(profile) {
+        case ResidentialLayoutProfile::BalancedConventional: return "Balanced Conventional";
+        case ResidentialLayoutProfile::OpenLiving: return "Open Living";
+        case ResidentialLayoutProfile::PrivacyFirst: return "Privacy First";
+    }
+    return "Unknown";
+}
+
+std::vector<ResidentialVariation> generate_residential_variations(
+        const ResidentialLayoutSettings& base,
+        const ArchitecturalValidationSettings& validation_settings) {
+    struct ProfileSettings {
+        ResidentialLayoutProfile profile;
+        double public_depth;
+        double circulation_depth;
+        double living_width;
+        double bedroom_width;
+    };
+    const std::vector<ProfileSettings> profiles{
+        {ResidentialLayoutProfile::BalancedConventional,
+         base.public_zone_depth_ratio,base.circulation_depth_ratio,
+         base.living_width_ratio,base.bedroom_width_ratio},
+        {ResidentialLayoutProfile::OpenLiving,0.67,0.13,0.60,0.58},
+        {ResidentialLayoutProfile::PrivacyFirst,0.55,0.22,0.48,0.68}
+    };
+
+    std::vector<ResidentialVariation> result;
+    result.reserve(profiles.size());
+    for(const auto& profile:profiles) {
+        auto settings=base;
+        settings.public_zone_depth_ratio=profile.public_depth;
+        settings.circulation_depth_ratio=profile.circulation_depth;
+        settings.living_width_ratio=profile.living_width;
+        settings.bedroom_width_ratio=profile.bedroom_width;
+        // Derive distinct, repeatable seeds without making geometry depend on randomness.
+        settings.seed=base.seed+static_cast<std::uint64_t>(profile.profile)*0x9E3779B97F4A7C15ULL;
+        auto layout=generate_balanced_residential_layout(settings);
+        layout.profile=profile.profile;
+        auto validation=validate_architectural_layout(layout,validation_settings);
+        if(validation.valid)
+            result.push_back({profile.profile,std::move(layout),std::move(validation)});
+    }
+    std::stable_sort(result.begin(),result.end(),[](const ResidentialVariation& a,
+                                                    const ResidentialVariation& b) {
+        if(std::abs(a.validation.quality_score-b.validation.quality_score)>1e-9)
+            return a.validation.quality_score>b.validation.quality_score;
+        return static_cast<int>(a.profile)<static_cast<int>(b.profile);
+    });
+    return result;
+}
+
 LayoutValidation validate_residential_layout(const ResidentialLayout2D& p,double t) {
     LayoutValidation r;
     const auto fail=[&](const std::string& m){r.errors.push_back(m);};
