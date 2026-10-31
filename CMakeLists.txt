@@ -8,6 +8,7 @@ add_library(mbf_core
     core/src/geometry2d.cpp
     core/src/polygon.cpp
     core/src/polygon_intersection.cpp
+    core/src/polygon_region.cpp
     core/src/residential_layout.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
