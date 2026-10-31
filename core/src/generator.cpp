@@ -36,16 +36,95 @@ FloorPlan FloorPlanGenerator::generate_grid_growth(const GenerationSettings&s,co
  for(auto&r:p.rooms){auto minx=cols,miny=rows,maxx=0U,maxy=0U;for(const auto&c:r.cells){minx=std::min(minx,c.x);miny=std::min(miny,c.y);maxx=std::max(maxx,c.x);maxy=std::max(maxy,c.y);}r.bounds={static_cast<double>(minx)*s.width_m/cols,static_cast<double>(miny)*s.depth_m/rows,static_cast<double>(maxx-minx+1U)*s.width_m/cols,static_cast<double>(maxy-miny+1U)*s.depth_m/rows};}
  calculate_adjacency(p);return p;
 }
-FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings&s,const std::vector<RoomSpec>&rs)const{
- check(s,rs);const auto w=weights(rs);FloorPlan p;p.seed=s.seed;p.width_m=s.width_m;p.depth_m=s.depth_m;p.algorithm=FloorPlanAlgorithm::SquarifiedTreemap;Rect rem{0,0,s.width_m,s.depth_m};double remw=1.0;std::size_t cursor=0;
- struct Place{std::size_t id;Rect rect;};std::vector<Place> out;
- while(cursor<rs.size()){const bool horizontal=rem.width>=rem.height;const auto shortside=std::min(rem.width,rem.height);std::size_t end=cursor;double strip=0,best=std::numeric_limits<double>::infinity();do{const auto addw=w[end]/remw;strip+=addw;const auto thick=rem.area()*strip/shortside;const auto ratio=std::max(shortside,thick)/std::max(1e-9,std::min(shortside,thick));if(ratio>best&&end>cursor){strip-=addw;break;}best=ratio;++end;}while(end<rs.size());const auto area=rem.area()*strip;
-  if(horizontal){const auto h=area/rem.width;double x=rem.x;for(std::size_t i=cursor;i<end;++i){const auto rw=rem.width*(w[i]/remw)/strip;out.push_back({i,{x,rem.y,rw,h}});x+=rw;}rem.y+=h;rem.height-=h;}
-  else{const auto width=area/rem.height;double y=rem.y;for(std::size_t i=cursor;i<end;++i){const auto rh=rem.height*(w[i]/remw)/strip;out.push_back({i,{rem.x,y,width,rh}});y+=rh;}rem.x+=width;rem.width-=width;}
-  remw*=1.0-strip;cursor=end;
- }
- std::sort(out.begin(),out.end(),[](const auto&a,const auto&b){return a.id<b.id;});for(std::size_t i=0;i<rs.size();++i){const auto&q=out[i];p.rooms.push_back({static_cast<RoomId>(i),rs[i].name,rs[i].target_area_m2,q.rect.area(),q.rect,{}});}
- constexpr double eps=1e-7;for(std::size_t i=0;i<p.rooms.size();++i)for(std::size_t j=i+1;j<p.rooms.size();++j){const auto&a=p.rooms[i].bounds;const auto&b=p.rooms[j].bounds;const auto vo=std::min(a.y+a.height,b.y+b.height)-std::max(a.y,b.y);const auto ho=std::min(a.x+a.width,b.x+b.width)-std::max(a.x,b.x);if((std::abs(a.x+a.width-b.x)<eps||std::abs(b.x+b.width-a.x)<eps)&&vo>eps)p.adjacency.push_back({static_cast<RoomId>(i),static_cast<RoomId>(j),1U});else if((std::abs(a.y+a.height-b.y)<eps||std::abs(b.y+b.height-a.y)<eps)&&ho>eps)p.adjacency.push_back({static_cast<RoomId>(i),static_cast<RoomId>(j),1U});}
- return p;
+FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings& s,
+                                                       const std::vector<RoomSpec>& rs) const {
+    check(s, rs);
+    const auto room_weights = weights(rs);
+
+    FloorPlan plan;
+    plan.seed = s.seed;
+    plan.width_m = s.width_m;
+    plan.depth_m = s.depth_m;
+    plan.algorithm = FloorPlanAlgorithm::SquarifiedTreemap;
+
+    Rect remaining{0.0, 0.0, s.width_m, s.depth_m};
+    const double total_area = s.width_m * s.depth_m;
+
+    const auto aspect_ratio = [](const Rect& rect) {
+        if (rect.width <= 0.0 || rect.height <= 0.0)
+            return std::numeric_limits<double>::infinity();
+        return std::max(rect.width / rect.height, rect.height / rect.width);
+    };
+
+    for (std::size_t i = 0; i < rs.size(); ++i) {
+        Rect placed{};
+        if (i + 1U == rs.size()) {
+            placed = remaining;
+        } else {
+            const double target_area = total_area * room_weights[i];
+            const double vertical_width = target_area / remaining.height;
+            const double horizontal_height = target_area / remaining.width;
+
+            double vertical_score = std::numeric_limits<double>::infinity();
+            double horizontal_score = std::numeric_limits<double>::infinity();
+
+            if (vertical_width > 1e-9 && vertical_width < remaining.width - 1e-9) {
+                const Rect candidate{remaining.x, remaining.y, vertical_width, remaining.height};
+                const Rect rest{remaining.x + vertical_width, remaining.y,
+                                remaining.width - vertical_width, remaining.height};
+                vertical_score = std::max(aspect_ratio(candidate), aspect_ratio(rest));
+            }
+            if (horizontal_height > 1e-9 && horizontal_height < remaining.height - 1e-9) {
+                const Rect candidate{remaining.x, remaining.y, remaining.width, horizontal_height};
+                const Rect rest{remaining.x, remaining.y + horizontal_height,
+                                remaining.width, remaining.height - horizontal_height};
+                horizontal_score = std::max(aspect_ratio(candidate), aspect_ratio(rest));
+            }
+
+            if (!std::isfinite(vertical_score) && !std::isfinite(horizontal_score))
+                throw std::runtime_error("Could not partition the remaining building footprint.");
+
+            if (vertical_score <= horizontal_score) {
+                placed = {remaining.x, remaining.y, vertical_width, remaining.height};
+                remaining.x += vertical_width;
+                remaining.width -= vertical_width;
+            } else {
+                placed = {remaining.x, remaining.y, remaining.width, horizontal_height};
+                remaining.y += horizontal_height;
+                remaining.height -= horizontal_height;
+            }
+        }
+
+        plan.rooms.push_back({
+            static_cast<RoomId>(i), rs[i].name, rs[i].target_area_m2,
+            placed.area(), placed, {}
+        });
+    }
+
+    constexpr double epsilon = 1e-7;
+    for (std::size_t i = 0; i < plan.rooms.size(); ++i) {
+        for (std::size_t j = i + 1U; j < plan.rooms.size(); ++j) {
+            const auto& a = plan.rooms[i].bounds;
+            const auto& b = plan.rooms[j].bounds;
+            const double vertical_overlap =
+                std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
+            const double horizontal_overlap =
+                std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x);
+
+            if ((std::abs(a.x + a.width - b.x) < epsilon ||
+                 std::abs(b.x + b.width - a.x) < epsilon) && vertical_overlap > epsilon) {
+                plan.adjacency.push_back({
+                    static_cast<RoomId>(i), static_cast<RoomId>(j), 1U
+                });
+            } else if ((std::abs(a.y + a.height - b.y) < epsilon ||
+                        std::abs(b.y + b.height - a.y) < epsilon) &&
+                       horizontal_overlap > epsilon) {
+                plan.adjacency.push_back({
+                    static_cast<RoomId>(i), static_cast<RoomId>(j), 1U
+                });
+            }
+        }
+    }
+    return plan;
 }
 } // namespace mbf
