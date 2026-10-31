@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — polygon engine and first balanced residential zoning prototype implemented**
+**Status: In progress — canonical geometry and first edge-normalization pass implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -38,7 +38,7 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Polygon, ring, point, and boundary-segment data types in the engine-neutral model.
 - [x] Convert grid-grown rooms into clean polygon boundaries.
 - [x] Convert treemap rectangles into the same canonical polygon representation.
-- [ ] Merge collinear edges and remove duplicate or zero-length segments. (Grid-growth boundary cleanup remains pending.)
+- [x] Normalize collinear room edges, split partial overlaps at shared endpoints, deduplicate shared wall pieces, merge compatible adjacent segments, and discard zero-length edges. (Further grid-growth edge-case coverage remains pending.)
 - [x] Classify exact matching room boundaries as exterior walls or shared internal walls.\n- [ ] Distinguish open circulation boundaries and split wall segments around door/open-plan openings.
 - [x] Calculate boundary lengths and preserve room-to-room ownership for exact shared edges.
 - [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.
@@ -54,7 +54,7 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-The new standalone Polygon Engine and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+The new standalone Polygon Engine, normalized boundary graph, and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
