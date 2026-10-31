@@ -141,6 +141,7 @@ Geometry2DResult build_geometry_2d(const FloorPlan& plan) {
     Geometry2DResult result;
     result.geometry.width_m = plan.width_m;
     result.geometry.depth_m = plan.depth_m;
+    result.geometry.entrance = plan.entrance;
 
     const auto fail = [&](const std::string& message) {
         result.valid = false;
@@ -243,7 +244,22 @@ bool export_geometry_svg(const BuildingGeometry2D& geometry,
         }
         svg << "</g>\n";
     }
-    svg << "</g>\n";
+    if (geometry.entrance.defined) {
+        svg << "<line x1=\"" << geometry.entrance.start_x << "\" y1=\"" << geometry.entrance.start_y
+            << "\" x2=\"" << geometry.entrance.end_x << "\" y2=\"" << geometry.entrance.end_y
+            << "\" stroke=\"#16a34a\" stroke-width=\"0.16\" stroke-linecap=\"round\"/>\\n";
+    }
+    svg << "</g>\\n";
+    if (geometry.entrance.defined) {
+        const double ex = (geometry.entrance.start_x + geometry.entrance.end_x) * 0.5;
+        const double ey = (geometry.entrance.start_y + geometry.entrance.end_y) * 0.5;
+        const double label_y = geometry.entrance.side == EntranceSide::South
+            ? margin + geometry.depth_m * scale + 16.0
+            : margin + (geometry.depth_m - ey) * scale - 8.0;
+        svg << "<text x=\"" << margin + ex * scale << "\" y=\"" << label_y
+            << "\" font-family=\"Arial,sans-serif\" font-size=\"11\" text-anchor=\"middle\" "
+            << "fill=\"#15803d\">ENTRY</text>\\n";
+    }
     for (const auto& room : geometry.rooms) {
         double cx = 0.0, cy = 0.0;
         for (const auto& ring : room.rings) for (const auto& point : ring.vertices) {
