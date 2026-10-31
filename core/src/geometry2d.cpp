@@ -316,6 +316,114 @@ WallTopology2D build_wall_topology(const BuildingGeometry2D& geometry,double tol
     return graph;
 }
 
+
+bool add_wall_opening(WallTopology2D& topology,std::uint64_t wall_id,
+                      OpeningKind2D kind,double offset_m,double width_m,
+                      const OpeningSettings2D& settings,std::string* error,double tolerance) {
+    const auto fail=[&](const std::string& message){if(error)*error=message;return false;};
+    const auto wall_it=std::find_if(topology.walls.begin(),topology.walls.end(),
+        [&](const BoundarySegment2D& wall){return wall.id==wall_id;});
+    if(wall_it==topology.walls.end()) return fail("Opening references an unknown wall ID.");
+    if(!std::isfinite(offset_m)||!std::isfinite(width_m)||width_m<=tolerance)
+        return fail("Opening offset and width must be finite; width must be positive.");
+    if(kind==OpeningKind2D::Window && wall_it->kind!=BoundaryKind2D::ExteriorWall)
+        return fail("Windows can only be placed on exterior walls.");
+    if((kind==OpeningKind2D::InteriorDoor||kind==OpeningKind2D::OpenPlan) &&
+       wall_it->kind!=BoundaryKind2D::SharedWall)
+        return fail("Interior doors and open-plan connections require a shared wall.");
+    const double end=offset_m+width_m;
+    if(offset_m<settings.minimum_end_clearance_m-tolerance ||
+       end>wall_it->length_m-settings.minimum_end_clearance_m+tolerance)
+        return fail("Opening violates the required wall-end clearance.");
+    for(const auto& existing:topology.openings) {
+        if(existing.wall_id!=wall_id) continue;
+        const double a=existing.offset_m,b=a+existing.width_m;
+        if(std::min(end,b)-std::max(offset_m,a)>tolerance)
+            return fail("Opening overlaps an existing opening on this wall.");
+    }
+    WallOpening2D opening;
+    opening.id=topology.openings.empty()?1U:topology.openings.back().id+1U;
+    opening.wall_id=wall_id;opening.kind=kind;
+    opening.offset_m=offset_m;opening.width_m=width_m;
+    opening.height_m=kind==OpeningKind2D::Window?settings.window_height_m:settings.door_height_m;
+    opening.sill_height_m=kind==OpeningKind2D::Window?settings.window_sill_height_m:0.0;
+    opening.room_a=wall_it->room_a;opening.room_b=wall_it->room_b;
+    topology.openings.push_back(opening);
+    rebuild_wall_pieces(topology,tolerance);
+    return true;
+}
+
+void rebuild_wall_pieces(WallTopology2D& topology,double tolerance) {
+    topology.wall_pieces.clear();
+    std::uint64_t next_id=1;
+    for(const auto& wall:topology.walls) {
+        std::vector<std::pair<double,double>> intervals;
+        for(const auto& opening:topology.openings)
+            if(opening.wall_id==wall.id)
+                intervals.push_back({opening.offset_m,opening.offset_m+opening.width_m});
+        std::sort(intervals.begin(),intervals.end());
+        double cursor=0.0;
+        const double dx=(wall.end.x-wall.start.x)/wall.length_m;
+        const double dy=(wall.end.y-wall.start.y)/wall.length_m;
+        const auto emit=[&](double from,double to,bool gap) {
+            if(to-from<=tolerance)return;
+            WallPiece2D piece;
+            piece.id=next_id++;piece.source_wall_id=wall.id;
+            piece.start={wall.start.x+dx*from,wall.start.y+dy*from};
+            piece.end={wall.start.x+dx*to,wall.start.y+dy*to};
+            piece.length_m=to-from;piece.opening_gap=gap;
+            topology.wall_pieces.push_back(piece);
+        };
+        for(const auto& interval:intervals) {
+            const double a=std::clamp(interval.first,0.0,wall.length_m);
+            const double b=std::clamp(interval.second,0.0,wall.length_m);
+            if(a>cursor+tolerance)emit(cursor,a,false);
+            if(b>a+tolerance)emit(a,b,true);
+            cursor=std::max(cursor,b);
+        }
+        if(wall.length_m>cursor+tolerance)emit(cursor,wall.length_m,false);
+    }
+}
+
+std::vector<std::uint64_t> generate_default_openings(
+    WallTopology2D& topology,const Entrance2D& entrance,const OpeningSettings2D& settings) {
+    std::vector<std::uint64_t> created;
+    if(entrance.defined) {
+        const Point2 midpoint{(entrance.start_x+entrance.end_x)*0.5,
+                              (entrance.start_y+entrance.end_y)*0.5};
+        for(const auto& wall:topology.walls) {
+            if(wall.kind!=BoundaryKind2D::ExteriorWall)continue;
+            const double dx=wall.end.x-wall.start.x,dy=wall.end.y-wall.start.y;
+            const double len2=dx*dx+dy*dy;
+            if(len2<=1e-14)continue;
+            const double t=((midpoint.x-wall.start.x)*dx+(midpoint.y-wall.start.y)*dy)/len2;
+            if(t< -1e-7||t>1.0+1e-7)continue;
+            const Point2 projected{wall.start.x+t*dx,wall.start.y+t*dy};
+            if(std::hypot(projected.x-midpoint.x,projected.y-midpoint.y)>1e-5)continue;
+            const double width=entrance.clear_width_m>0?entrance.clear_width_m:settings.entrance_width_m;
+            std::string ignored;
+            if(add_wall_opening(topology,wall.id,OpeningKind2D::EntranceDoor,
+                                wall.length_m*t-width*0.5,width,settings,&ignored)) {
+                created.push_back(topology.openings.back().id);
+                break;
+            }
+        }
+    }
+    const auto walls=topology.walls;
+    for(const auto& wall:walls) {
+        const double width=wall.kind==BoundaryKind2D::SharedWall
+            ?settings.interior_door_width_m:settings.window_width_m;
+        if(wall.length_m<width+2.0*settings.minimum_end_clearance_m)continue;
+        const double offset=(wall.length_m-width)*0.5;
+        const auto kind=wall.kind==BoundaryKind2D::SharedWall
+            ?OpeningKind2D::InteriorDoor:OpeningKind2D::Window;
+        std::string ignored;
+        if(add_wall_opening(topology,wall.id,kind,offset,width,settings,&ignored))
+            created.push_back(topology.openings.back().id);
+    }
+    return created;
+}
+
 double Ring2::signed_area_m2() const noexcept {
     if (vertices.size() < 3U) return 0.0;
     double twice_area = 0.0;
