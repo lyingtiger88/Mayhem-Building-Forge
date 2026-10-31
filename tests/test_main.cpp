@@ -223,6 +223,41 @@ void residential_variations(){
  req(std::string(residential_profile_name(ResidentialLayoutProfile::OpenLiving))=="Open Living",
      "profile names are human-readable");
 }
+
+void physical_circulation_clearances(){
+ using namespace mbf;
+ ResidentialLayoutSettings layout_settings;
+ layout_settings.width_m=12.0;layout_settings.depth_m=9.0;
+ const auto plan=generate_balanced_residential_layout(layout_settings);
+ const auto valid=validate_physical_circulation(plan);
+ req(valid.valid,"baseline residential plan passes physical circulation checks");
+ req(valid.door_approaches.size()==9U,
+     "entrance and internal doors produce approach envelopes on each served side");
+ for(const auto& approach:valid.door_approaches) {
+  req(approach.valid,"door approach envelope fits within its room");
+  req(std::abs(polygon_area(approach.envelope)-
+       plan.openings[approach.opening_index].clear_width_m*approach.depth_m)<1e-6,
+       "door approach envelope has expected clear area");
+ }
+ CirculationSettings2D narrow_corridor;
+ narrow_corridor.minimum_corridor_width_m=2.0;
+ req(!validate_physical_circulation(plan,narrow_corridor).valid,
+     "hallway narrower than required clear width is rejected");
+ CirculationSettings2D excessive_approach;
+ excessive_approach.door_approach_depth_m=20.0;
+ req(!validate_physical_circulation(plan,excessive_approach).valid,
+     "door approach extending outside the room is rejected");
+ auto no_entrance=plan;
+ no_entrance.openings.erase(std::remove_if(no_entrance.openings.begin(),no_entrance.openings.end(),
+  [](const PlanOpening& opening){return opening.kind==OpeningKind::EntranceDoor;}),
+  no_entrance.openings.end());
+ req(!validate_physical_circulation(no_entrance).valid,
+     "circulation without an exterior entrance is rejected");
+ CirculationSettings2D invalid;
+ invalid.door_approach_depth_m=0.0;
+ req(!validate_physical_circulation(plan,invalid).valid,
+     "invalid physical clearance settings are rejected");
+}
 void architectural_validation(){
  using namespace mbf;
  ResidentialLayoutSettings settings;settings.width_m=12;settings.depth_m=9;settings.seed=77;
@@ -417,4 +452,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();robust_polygon_geometry();residential_layout();residential_variations();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
