@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — canonical geometry and first edge-normalization pass implemented**
+**Status: In progress — normalized wall segments and deterministic wall-topology graph implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -40,7 +40,10 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Convert treemap rectangles into the same canonical polygon representation.
 - [x] Normalize collinear room edges, split partial overlaps at shared endpoints, deduplicate shared wall pieces, merge compatible adjacent segments, and discard zero-length edges. (Further grid-growth edge-case coverage remains pending.)
 - [x] Classify exact matching room boundaries as exterior walls or shared internal walls.\n- [ ] Distinguish open circulation boundaries and split wall segments around door/open-plan openings.
+- [ ] Add robust junction resolution for overlapping multi-room boundaries and non-manifold cases.
 - [x] Calculate boundary lengths and preserve room-to-room ownership for exact shared edges.
+- [x] Build a deterministic wall-topology graph with unique junction nodes and wall connectivity.
+- [x] Classify degree-2 straight/corner nodes and degree-3 T-junctions, degree-4 cross-junctions, endpoints, and complex junctions.
 - [ ] Complete building entrance, corridor geometry, room access, and traversable circulation graph.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [ ] Generate door candidates on valid shared boundaries and validate clear widths.
