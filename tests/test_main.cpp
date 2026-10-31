@@ -244,9 +244,53 @@ void wall_opening_integration(){
  req(window!=graph.openings.end()&&window->height_m>0.0&&window->sill_height_m>0.0,
      "window stores height and sill elevation");
 }
+
+void circulation_access_graph(){
+ using namespace mbf;
+ BuildingGeometry2D g;g.width_m=4.0;g.depth_m=2.0;
+ g.rooms.push_back({0,"Left",4.0,{{{{0,0},{2,0},{2,2},{0,2}}}}});
+ g.rooms.push_back({1,"Right",4.0,{{{{2,0},{4,0},{4,2},{2,2}}}}});
+ auto graph=build_wall_topology(g);
+ const auto exterior=std::find_if(graph.walls.begin(),graph.walls.end(),
+  [](const BoundarySegment2D&w){return w.kind==BoundaryKind2D::ExteriorWall;});
+ const auto shared=std::find_if(graph.walls.begin(),graph.walls.end(),
+  [](const BoundarySegment2D&w){return w.kind==BoundaryKind2D::SharedWall;});
+ req(exterior!=graph.walls.end()&&shared!=graph.walls.end(),"circulation fixture has exterior and shared walls");
+ std::string error;
+ req(add_wall_opening(graph,exterior->id,OpeningKind2D::EntranceDoor,0.5,1.0,{},&error),
+     "exterior entrance door accepted");
+ req(add_wall_opening(graph,shared->id,OpeningKind2D::InteriorDoor,0.5,0.9,{},&error),
+     "interior access door accepted");
+ const auto access=build_circulation_graph(graph,{0,1},0.8);
+ req(access.valid,"all rooms are reachable from entrance");
+ req(access.reachable_room_ids.size()==2U&&access.inaccessible_room_ids.empty(),
+     "entrance and interior door connect both rooms");
+ req(access.links.size()==2U,"access graph contains entrance and room-to-room links");
+ req(std::count_if(access.links.begin(),access.links.end(),[](const RoomAccessLink2D&l){return l.is_entrance;})==1,
+     "access graph identifies one exterior entrance");
+
+ auto disconnected=build_wall_topology(g);
+ const auto ext2=std::find_if(disconnected.walls.begin(),disconnected.walls.end(),
+  [](const BoundarySegment2D&w){return w.kind==BoundaryKind2D::ExteriorWall;});
+ req(add_wall_opening(disconnected,ext2->id,OpeningKind2D::EntranceDoor,0.5,1.0,{},&error),
+     "entrance-only fixture accepted");
+ const auto disconnected_result=build_circulation_graph(disconnected,{0,1},0.8);
+ req(!disconnected_result.valid&&disconnected_result.inaccessible_room_ids.size()==1U,
+     "room without a door connection is reported inaccessible");
+
+ auto narrow=build_wall_topology(g);
+ const auto ext3=std::find_if(narrow.walls.begin(),narrow.walls.end(),
+  [](const BoundarySegment2D&w){return w.kind==BoundaryKind2D::ExteriorWall;});
+ req(add_wall_opening(narrow,ext3->id,OpeningKind2D::EntranceDoor,0.5,0.6,{},&error),
+     "narrow entrance can be represented before access validation");
+ const auto narrow_result=build_circulation_graph(narrow,{0,1},0.8);
+ req(!narrow_result.valid,"entrance below minimum clear width fails access validation");
+ req(!add_wall_opening(narrow,ext3->id,OpeningKind2D::InteriorDoor,0.5,0.9,{},&error),
+     "interior door cannot be placed on exterior wall");
+}
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();residential_layout();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();residential_layout();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
