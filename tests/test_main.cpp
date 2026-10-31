@@ -2,6 +2,7 @@
 #include "mbf/generator.hpp"
 #include "mbf/geometry2d.hpp"
 #include "mbf/polygon.hpp"
+#include "mbf/residential_layout.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -102,9 +103,36 @@ void polygon_engine(){
  const auto center=polygon_centroid(rect);
  req(std::abs(center.x-2.0)<1e-9&&std::abs(center.y-1.5)<1e-9,"rectangle centroid is correct");
 }
+
+void residential_layout(){
+ using namespace mbf;
+ ResidentialLayoutSettings s;s.width_m=12;s.depth_m=9;s.seed=20261031;
+ const auto p=generate_balanced_residential_layout(s);
+ const auto v=validate_residential_layout(p);
+ req(v.valid,"balanced residential layout validates");
+ req(p.rooms.size()==5U,"residential plan has five functional zones");
+ req(p.openings.size()==6U,"residential plan has entrance, room doors and open-plan connection");
+ double area=0;
+ for(const auto&r:p.rooms){req(validate_polygon(r.footprint).valid,"every room is a valid polygon");area+=r.area_m2;}
+ req(std::abs(area-108.0)<1e-7,"residential room polygons cover the whole footprint");
+ req(p.rooms[0].role==RoomRole::Living&&p.rooms[1].role==RoomRole::Kitchen,"public rooms occupy south zone");
+ req(p.rooms[2].role==RoomRole::Hallway,"circulation spine is explicit");
+ req(p.rooms[3].role==RoomRole::Bedroom&&p.rooms[4].role==RoomRole::Bathroom,"private and service rooms occupy north zone");
+ req(p.openings[0].kind==OpeningKind::EntranceDoor,"south entrance is represented as an opening");
+ req(p.openings[1].kind==OpeningKind::OpenPlanConnection,"living and kitchen have open-plan connection");
+ const auto path=std::filesystem::temp_directory_path()/"mayhem_house_layout_test.svg";
+ std::string error;
+ req(export_residential_layout_svg(p,path.string(),&error),"residential SVG export succeeds");
+ req(std::filesystem::exists(path)&&std::filesystem::file_size(path)>200U,"residential SVG exists and is non-empty");
+ std::filesystem::remove(path);
+ bool rejected=false;
+ try{ResidentialLayoutSettings bad;bad.width_m=5;(void)generate_balanced_residential_layout(bad);}
+ catch(const std::invalid_argument&){rejected=true;}
+ req(rejected,"too-small house footprint is rejected");
+}
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();residential_layout();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
