@@ -68,6 +68,28 @@ struct LayoutValidation {
     std::vector<std::string> warnings;
 };
 
+struct CirculationSettings2D {
+    double minimum_corridor_width_m{0.9};
+    double minimum_door_clear_width_m{0.8};
+    double door_approach_depth_m{0.9};
+    double tolerance{1e-7};
+};
+
+struct DoorApproachClearance2D {
+    RoomId room_id{};
+    std::size_t opening_index{};
+    Polygon2D envelope;
+    double depth_m{};
+    bool valid{false};
+};
+
+struct CirculationValidation2D {
+    bool valid{false};
+    std::vector<DoorApproachClearance2D> door_approaches;
+    std::vector<std::string> errors;
+    std::vector<std::string> warnings;
+};
+
 struct ResidentialVariation {
     ResidentialLayoutProfile profile{ResidentialLayoutProfile::BalancedConventional};
     ResidentialLayout2D layout;
@@ -86,6 +108,9 @@ struct ResidentialVariation {
 
 [[nodiscard]] LayoutValidation validate_residential_layout(
     const ResidentialLayout2D& layout, double tolerance = 1e-7);
+[[nodiscard]] CirculationValidation2D validate_physical_circulation(
+    const ResidentialLayout2D& layout,
+    const CirculationSettings2D& settings = {});
 [[nodiscard]] LayoutValidation validate_architectural_layout(
     const ResidentialLayout2D& layout,
     const ArchitecturalValidationSettings& settings = {});
