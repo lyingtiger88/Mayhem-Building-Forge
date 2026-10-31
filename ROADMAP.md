@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — wall topology, validated openings, and room-access reachability graph implemented**
+**Status: In progress — wall topology, openings, circulation reachability, and configurable architectural validation implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -56,12 +56,14 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Generate deterministic default door/window candidates from classified wall topology.
 - [x] Connect opening records to room-access reachability and entrance validation.
 - [ ] Optimize door placement against room function, privacy, and direct entrance sightlines.
-- [ ] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
+- [x] Enforce configurable room minimum area, width, depth, and aspect-ratio constraints.
 - [x] Add semantic room roles and deterministic adjacency-aware layout scoring for common residential room types.
-- [ ] Validate footprint coverage, polygon validity, non-overlap, connectivity, and openings.
+- [x] Validate footprint coverage, polygon validity, non-overlap, room access connectivity, and opening boundary/width constraints.
+- [x] Add architectural quality scoring and warnings for rooms close to configured minimums.
 - [x] Export a human-readable 2D debug drawing (SVG; first visual-debug version).
 - [x] Add deterministic regression tests for rectangular partition area, bounds, aspect ratio, and overlap.
 - [ ] Add broader property-based tests for geometry edge cases.
+- [ ] Replace axis-aligned bounding-box overlap checks with robust arbitrary-polygon intersection and coverage validation.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
