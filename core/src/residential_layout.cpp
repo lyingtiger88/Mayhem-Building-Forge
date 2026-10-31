@@ -24,14 +24,6 @@ bool inside_bounds(const Polygon2D& p,double w,double h,double t) {
         if(v.x < -t || v.y < -t || v.x > w+t || v.y > h+t) return false;
     return true;
 }
-bool rects_overlap_area(const Polygon2D& a,const Polygon2D& b,double t) {
-    double aminx=std::numeric_limits<double>::max(),aminy=aminx,amaxx=-aminx,amaxy=-aminx;
-    double bminx=aminx,bminy=aminx,bmaxx=-aminx,bmaxy=-aminx;
-    for(const auto&p:a.vertices){aminx=std::min(aminx,p.x);aminy=std::min(aminy,p.y);amaxx=std::max(amaxx,p.x);amaxy=std::max(amaxy,p.y);}
-    for(const auto&p:b.vertices){bminx=std::min(bminx,p.x);bminy=std::min(bminy,p.y);bmaxx=std::max(bmaxx,p.x);bmaxy=std::max(bmaxy,p.y);}
-    return std::min(amaxx,bmaxx)-std::max(aminx,bminx)>t &&
-           std::min(amaxy,bmaxy)-std::max(aminy,bminy)>t;
-}
 bool segment_on_boundary(const PlanOpening& o,const Polygon2D& a,const Polygon2D* b,double t) {
     const auto on_edge=[&](const Polygon2D& p) {
         for(std::size_t i=0;i<p.vertices.size();++i) {
@@ -172,11 +164,20 @@ LayoutValidation validate_residential_layout(const ResidentialLayout2D& p,double
         area+=polygon_area(room.footprint);
     }
     for(std::size_t i=0;i<p.rooms.size();++i)
-        for(std::size_t j=i+1;j<p.rooms.size();++j)
-            if(rects_overlap_area(p.rooms[i].footprint,p.rooms[j].footprint,t))
+        for(std::size_t j=i+1;j<p.rooms.size();++j) {
+            const double shared_area=polygon_intersection_area(
+                p.rooms[i].footprint,p.rooms[j].footprint,t);
+            if(!std::isfinite(shared_area))
+                fail("Cannot evaluate polygon overlap for rooms "+
+                     p.rooms[i].name+" and "+p.rooms[j].name+".");
+            else if(shared_area>std::max(t*t,p.width_m*p.depth_m*1e-9))
                 fail("Rooms "+p.rooms[i].name+" and "+p.rooms[j].name+" overlap.");
+        }
+    // With every valid simple room polygon inside the rectangular envelope,
+    // and pairwise positive-area overlaps rejected, equality of summed area
+    // to envelope area establishes coverage up to the configured tolerance.
     if(std::abs(area-p.width_m*p.depth_m)>std::max(1e-5,p.width_m*p.depth_m*1e-7))
-        fail("Room footprints do not fully cover the building footprint.");
+        fail("Room footprints do not fully cover the building footprint (gap or excess area).");
     for(const auto&o:p.openings) {
         if(o.from_room>=p.rooms.size()||o.to_room>=p.rooms.size())
             {fail("Opening references an unknown room.");continue;}
