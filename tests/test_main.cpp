@@ -61,13 +61,15 @@ void topology_first(){
  req(p.entrance.room_id==4U,"entrance opens into hallway");
  req(p.entrance.clear_width_m>=0.9&&p.entrance.clear_width_m<=1.0,"entrance clear width is valid");
  req(std::abs(p.entrance.start_y)<1e-7&&std::abs(p.entrance.end_y)<1e-7,"entrance lies on south facade");
- req(p.circulation_links.size()>=4U,"hallway and open-plan access links are emitted");
+ req(p.circulation_links.size()>=5U,"hallway and open-plan access links are emitted");
+ req(mbf::validate_floor_plan(p).valid,"entrance and circulation metadata validate");
  const auto adjacent=[&](mbf::RoomId a,mbf::RoomId b){
   for(const auto&e:p.adjacency)if((e.first==a&&e.second==b)||(e.first==b&&e.second==a))return true;
   return false;
  };
  req(adjacent(0,1),"living directly adjoins kitchen");
  req(adjacent(0,4),"living directly adjoins hallway");
+ req(adjacent(4,1),"hallway directly adjoins kitchen");
  req(adjacent(4,2),"hallway directly adjoins bedroom");
  req(adjacent(4,3),"hallway directly adjoins bathroom");
  const auto hall=std::find_if(p.rooms.begin(),p.rooms.end(),[](const auto&r){return r.role==mbf::RoomRole::Hallway;});
