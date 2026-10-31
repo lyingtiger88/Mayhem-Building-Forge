@@ -131,6 +131,39 @@ void residential_layout(){
  req(rejected,"too-small house footprint is rejected");
 }
 
+
+void architectural_validation(){
+ using namespace mbf;
+ ResidentialLayoutSettings settings;settings.width_m=12;settings.depth_m=9;settings.seed=77;
+ auto plan=generate_balanced_residential_layout(settings);
+ const auto valid=validate_architectural_layout(plan);
+ req(valid.valid,"balanced residential layout passes architectural constraints");
+ req(valid.quality_score>0.0&&valid.quality_score<=100.0,"valid layout receives bounded quality score");
+
+ ArchitecturalValidationSettings strict;
+ strict.minimum_room_area_m2=20.0;
+ const auto undersized=validate_architectural_layout(plan,strict);
+ req(!undersized.valid&&undersized.quality_score==0.0,"undersized rooms fail configured minimum area");
+
+ auto disconnected=plan;
+ disconnected.openings.erase(std::remove_if(disconnected.openings.begin(),disconnected.openings.end(),
+  [](const PlanOpening&o){return o.from_room==2U&&o.to_room==4U;}),disconnected.openings.end());
+ const auto access=validate_architectural_layout(disconnected);
+ req(!access.valid,"room disconnected from entrance fails circulation validation");
+ req(std::any_of(access.errors.begin(),access.errors.end(),
+  [](const std::string&e){return e.find("not reachable")!=std::string::npos;}),
+  "inaccessible room diagnostic identifies reachability failure");
+
+ auto narrow=plan;
+ narrow.openings.front().clear_width_m=0.5;
+ const auto width=validate_architectural_layout(narrow);
+ req(!width.valid,"narrow entrance fails clear-width constraint");
+
+ ArchitecturalValidationSettings invalid_settings;
+ invalid_settings.maximum_room_aspect_ratio=0.5;
+ req(!validate_architectural_layout(plan,invalid_settings).valid,
+     "invalid architectural constraints are rejected");
+}
 void boundary_classification(){
  using namespace mbf;
  FloorPlanGenerator generator;
@@ -293,4 +326,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();residential_layout();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();residential_layout();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
