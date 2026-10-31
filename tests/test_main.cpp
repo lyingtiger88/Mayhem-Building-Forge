@@ -3,6 +3,7 @@
 #include "mbf/geometry2d.hpp"
 #include "mbf/polygon.hpp"
 #include "mbf/polygon_region.hpp"
+#include "mbf/polygon_offset.hpp"
 #include "mbf/residential_layout.hpp"
 #include <cmath>
 #include <algorithm>
@@ -83,6 +84,52 @@ void topology_first(){
 }
 
 
+
+void polygon_offsets_and_setbacks(){
+ using namespace mbf;
+ const auto lot=make_rectangle(0,0,10,8);
+ const auto inset=offset_polygon(lot,-1.0);
+ req(inset.valid,"rectangle inward offset succeeds");
+ req(std::abs(polygon_area(inset.polygon)-48.0)<1e-7,
+     "one-metre rectangle inset has analytically correct area");
+ for(const auto& v:inset.polygon.vertices)
+  req(v.x>=1.0-1e-8&&v.x<=9.0+1e-8&&v.y>=1.0-1e-8&&v.y<=7.0+1e-8,
+      "inset vertices respect the setback distance");
+
+ const auto expanded=offset_polygon(lot,1.0);
+ req(expanded.valid,"rectangle outward offset succeeds");
+ req(std::abs(polygon_area(expanded.polygon)-120.0)<1e-7,
+     "one-metre rectangle expansion has analytically correct area");
+
+ Polygon2D clockwise=lot;
+ std::reverse(clockwise.vertices.begin(),clockwise.vertices.end());
+ const auto cw_inset=offset_polygon(clockwise,-1.0);
+ req(cw_inset.valid&&std::abs(polygon_area(cw_inset.polygon)-48.0)<1e-7,
+     "offset supports clockwise polygon winding");
+
+ const auto buildable=compute_buildable_area(lot,1.0);
+ req(buildable.valid,"uniform site setback creates a buildable area");
+ req(std::abs(buildable.lot_area_m2-80.0)<1e-8&&
+     std::abs(buildable.buildable_area_m2-48.0)<1e-7,
+     "buildable-area report includes correct lot and net areas");
+
+ const auto no_setback=compute_buildable_area(lot,0.0);
+ req(no_setback.valid&&std::abs(no_setback.buildable_area_m2-80.0)<1e-8,
+     "zero setback preserves the original lot boundary");
+ req(!compute_buildable_area(lot,-0.5).valid,
+     "negative site setback is rejected");
+
+ const auto collapsed=offset_polygon(make_rectangle(0,0,2,2),-1.1);
+ req(!collapsed.valid,"inward offset beyond polygon collapse is rejected");
+ const auto invalid_miter=offset_polygon(lot,-0.5,0.5);
+ req(!invalid_miter.valid,"miter limit below one is rejected");
+
+ const Polygon2D l_shape{{{0,0},{6,0},{6,2},{2,2},{2,6},{0,6}}};
+ const auto l_inset=offset_polygon(l_shape,-0.25);
+ req(l_inset.valid,"moderate inward offset of a concave L-shaped polygon succeeds");
+ req(polygon_area(l_inset.polygon)<polygon_area(l_shape),
+     "concave inset reduces usable area");
+}
 void non_rectangular_regions(){
  using namespace mbf;
  const PolygonRegion2D l_shape{Polygon2D{{{0,0},{6,0},{6,2},{2,2},{2,6},{0,6}}},{}};
@@ -494,4 +541,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();non_rectangular_regions();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
