@@ -138,6 +138,7 @@ void residential_variations(){
  ResidentialLayoutSettings settings;
  settings.width_m=12.0;settings.depth_m=9.0;settings.seed=20261031;
  const auto variations=generate_residential_variations(settings);
+ if(variations.size()!=3U) std::cerr << "variation_count=" << variations.size() << std::endl;
  req(variations.size()==3U,"all three residential profiles produce valid candidates");
  std::vector<ResidentialLayoutProfile> profiles;
  for(const auto&candidate:variations) {
