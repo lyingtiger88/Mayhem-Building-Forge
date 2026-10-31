@@ -126,6 +126,52 @@ void append_svg_escape(std::ostringstream& out, const std::string& value) {
 }
 } // namespace
 
+std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geometry,double tolerance) {
+    struct EdgeRef { Point2 a,b; RoomId room; };
+    std::vector<EdgeRef> edges;
+    for(const auto& room:geometry.rooms)
+        for(const auto& ring:room.rings)
+            for(std::size_t i=0;i<ring.vertices.size();++i)
+                edges.push_back({ring.vertices[i],ring.vertices[(i+1U)%ring.vertices.size()],room.id});
+
+    const auto near=[&](double a,double b){return std::abs(a-b)<=tolerance;};
+    const auto same_segment=[&](const EdgeRef& a,const EdgeRef& b){
+        return (near(a.a.x,b.b.x)&&near(a.a.y,b.b.y)&&near(a.b.x,b.a.x)&&near(a.b.y,b.a.y)) ||
+               (near(a.a.x,b.a.x)&&near(a.a.y,b.a.y)&&near(a.b.x,b.b.x)&&near(a.b.y,b.b.y));
+    };
+    std::vector<BoundarySegment2D> result;
+    std::vector<bool> consumed(edges.size(),false);
+    std::uint64_t next_id=1;
+    for(std::size_t i=0;i<edges.size();++i) {
+        if(consumed[i]) continue;
+        const auto& e=edges[i];
+        std::size_t partner=edges.size();
+        for(std::size_t j=i+1U;j<edges.size();++j) {
+            if(consumed[j]||edges[j].room==e.room) continue;
+            if(same_segment(e,edges[j])) { partner=j; break; }
+        }
+        const double length=distance(e.a,e.b);
+        if(length<=tolerance) { consumed[i]=true; continue; }
+        const bool exterior=near(e.a.x,0.0)&&near(e.b.x,0.0) ||
+            near(e.a.x,geometry.width_m)&&near(e.b.x,geometry.width_m) ||
+            near(e.a.y,0.0)&&near(e.b.y,0.0) ||
+            near(e.a.y,geometry.depth_m)&&near(e.b.y,geometry.depth_m);
+        BoundarySegment2D boundary;
+        boundary.id=next_id++;
+        boundary.start=e.a; boundary.end=e.b; boundary.length_m=length;
+        boundary.kind=exterior?BoundaryKind2D::ExteriorWall:BoundaryKind2D::SharedWall;
+        boundary.room_a=e.room;
+        if(partner<edges.size()) {
+            boundary.kind=BoundaryKind2D::SharedWall;
+            boundary.room_b=edges[partner].room;
+            consumed[partner]=true;
+        }
+        result.push_back(boundary);
+        consumed[i]=true;
+    }
+    return result;
+}
+
 double Ring2::signed_area_m2() const noexcept {
     if (vertices.size() < 3U) return 0.0;
     double twice_area = 0.0;
@@ -212,6 +258,7 @@ Geometry2DResult build_geometry_2d(const FloorPlan& plan) {
     const double expected = plan.width_m * plan.depth_m;
     if (std::abs(total_area - expected) > std::max(1e-6, expected * 1e-6))
         fail("Generated room polygons do not conserve the building footprint area.");
+    result.geometry.boundaries=classify_boundaries(result.geometry);
     return result;
 }
 
