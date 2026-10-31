@@ -14,7 +14,7 @@ void check(const GenerationSettings&s,const std::vector<RoomSpec>&rs){
  if(!(s.width_m>0)||!(s.depth_m>0)||!std::isfinite(s.width_m)||!std::isfinite(s.depth_m))throw std::invalid_argument("Building dimensions must be finite and positive.");
  if(s.grid_resolution<4U||s.grid_resolution>512U)throw std::invalid_argument("Grid resolution must be 4..512.");
  if(rs.empty())throw std::invalid_argument("At least one room is required.");
- for(const auto&r:rs)if(r.name.empty()||!(r.target_area_m2>0)||!std::isfinite(r.target_area_m2)||r.min_area_m2<0)throw std::invalid_argument("Room name and target area must be valid.");
+ for(const auto&r:rs)if(r.name.empty()||!(r.target_area_m2>0)||!std::isfinite(r.target_area_m2))throw std::invalid_argument("Room name and target area must be valid.");
 }
 std::vector<double> weights(const std::vector<RoomSpec>&rs){double sum=0;for(const auto&r:rs)sum+=r.target_area_m2;std::vector<double>w;for(const auto&r:rs)w.push_back(r.target_area_m2/sum);return w;}
 }
