@@ -29,12 +29,12 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — topology-first residential prototype with explicit south entrance implemented**
+**Status: In progress — polygon engine and first balanced residential zoning prototype implemented**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
 - [x] Add first standalone polygon primitives: regular polygons, rectangles, concave polygons, area, centroid, containment, self-intersection validation, and shared-boundary length.
-- [ ] Canonical 2D coordinate system in metres, with explicit origin and axis conventions.
+- [x] Add a first balanced residential zoning prototype using explicit room polygons, a south entrance, public/private bands, a circulation spine, and modeled openings.\n- [ ] Canonical 2D coordinate system in metres, with explicit origin and axis conventions.
 - [ ] Polygon, ring, line-segment, and opening data types in the engine-neutral model.
 - [x] Convert grid-grown rooms into clean polygon boundaries.
 - [x] Convert treemap rectangles into the same canonical polygon representation.
@@ -54,7 +54,7 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
-The new standalone Polygon Engine is the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+The new standalone Polygon Engine and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: Planned**
