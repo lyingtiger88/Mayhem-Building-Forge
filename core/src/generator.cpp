@@ -26,7 +26,7 @@ FloorPlan FloorPlanGenerator::generate_grid_growth(const GenerationSettings&s,co
  const auto idx=[cols](std::uint32_t x,std::uint32_t y){return static_cast<std::size_t>(y)*cols+x;};
  std::vector<RoomId> owner(total,0U);std::vector<bool> used(total,false);std::mt19937_64 rng(s.seed);std::uniform_int_distribution<std::uint32_t>xd(0U,cols-1U),yd(0U,rows-1U);
  FloorPlan p;p.seed=s.seed;p.width_m=s.width_m;p.depth_m=s.depth_m;p.algorithm=FloorPlanAlgorithm::GridGrowth;const auto w=weights(rs);
- for(std::size_t i=0;i<rs.size();++i)p.rooms.push_back({static_cast<RoomId>(i),rs[i].name,rs[i].target_area_m2,0,{},{}});
+ for(std::size_t i=0;i<rs.size();++i)p.rooms.push_back({static_cast<RoomId>(i),rs[i].name,rs[i].target_area_m2,0,{},{},rs[i].role});
  std::vector<std::vector<std::size_t>> front(rs.size());std::vector<std::size_t> counts(rs.size(),1U);
  const auto add=[&](std::size_t cell,RoomId id){const auto x=static_cast<std::uint32_t>(cell%cols),y=static_cast<std::uint32_t>(cell/cols);const auto put=[&](std::uint32_t nx,std::uint32_t ny){const auto ni=idx(nx,ny);if(!used[ni]&&std::find(front[id].begin(),front[id].end(),ni)==front[id].end())front[id].push_back(ni);};if(x>0U)put(x-1U,y);if(x+1U<cols)put(x+1U,y);if(y>0U)put(x,y-1U);if(y+1U<rows)put(x,y+1U);};
  for(std::size_t i=0;i<rs.size();++i){std::size_t chosen=0;bool found=false;for(std::size_t n=0;n<total*2U;++n){chosen=idx(xd(rng),yd(rng));if(!used[chosen]){found=true;break;}}if(!found)for(std::size_t n=0;n<total;++n)if(!used[n]){chosen=n;found=true;break;}if(!found)throw std::runtime_error("Could not seed all rooms; increase grid resolution.");used[chosen]=true;owner[chosen]=static_cast<RoomId>(i);add(chosen,static_cast<RoomId>(i));}
