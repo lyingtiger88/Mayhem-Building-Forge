@@ -4,7 +4,7 @@
 #include <vector>
 namespace mbf {
 using RoomId = std::uint32_t;
-struct RoomSpec { std::string name; double target_area_m2{1.0}; double min_area_m2{0.0}; };
+struct RoomSpec { std::string name; double target_area_m2{1.0}; };
 struct Rect { double x{},y{},width{},height{}; [[nodiscard]] double area() const noexcept{return width*height;} };
 struct GridCell { std::uint32_t x{},y{}; RoomId room_id{}; friend bool operator==(const GridCell&,const GridCell&)=default; };
 struct RoomRegion { RoomId id{}; std::string name; double target_area_m2{},actual_area_m2{}; Rect bounds; std::vector<GridCell> cells; };
