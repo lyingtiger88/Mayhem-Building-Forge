@@ -8,7 +8,7 @@ The repository is currently a developer-facing core foundation. There is no grap
 
 1. Clone and build the repository using GETTING_STARTED.md.
 2. Edit examples/generate_sample.cpp to define the building footprint, seed, and room schedule.
-3. Select generate_grid_growth or generate_treemap.
+3. The sample uses generate_treemap by default for a clean, rectilinear room layout. Select generate_grid_growth only when inspecting experimental cell-growth behaviour.
 4. Run the sample and inspect room areas and adjacency count.
 5. Run CTest after changing the core.
 
@@ -20,7 +20,7 @@ Use generate_grid_growth when you want a cell-based plan with varied room shapes
 
 ### Treemap subdivision
 
-Use generate_treemap when you want a quick rectangular area partition. It produces room rectangles based on target-area weights. It is useful as a baseline, but it does not yet guarantee architectural access, realistic corridors, doors, windows, or furniture fit.
+Use generate_treemap for the current clean 2D preview. It partitions the footprint into non-overlapping rectangles using target-area weights and chooses each cut orientation to reduce the worst aspect ratio of the new room and remaining footprint. This produces a legible rectilinear partition, not a complete architectural design. It does not yet guarantee architectural access, realistic corridors, doors, windows, or furniture fit.
 
 ## Input concepts
 
@@ -52,7 +52,7 @@ Treat outputs as procedural layout candidates for development and testing, not c
 
 ## 2D geometry preview (new)
 
-The sample executable now converts the generated floor plan into canonical room polygons and writes an SVG preview named `mayhem_floor_plan.svg` in the process working directory.
+The sample executable now uses the rectangular treemap partition, converts each room rectangle into canonical polygon geometry, and writes an SVG preview named `mayhem_floor_plan.svg` in the process working directory.
 
 Run it from the repository root:
 
@@ -61,8 +61,8 @@ Run it from the repository root:
 Open `mayhem_floor_plan.svg` in a browser or vector graphics editor. The first preview shows room regions and labels. It is a development visualization, not a construction drawing.
 
 The current 2D implementation supports:
-- grid-grown room boundaries represented as polygon rings;
-- treemap rooms represented as rectangular polygon rings;
+- grid-grown room boundaries represented as polygon rings (experimental; can look jagged);
+- treemap rooms represented as clean rectangular polygon rings (default sample output);
 - area conservation validation against the building footprint;
 - SVG export for visual inspection.
 
