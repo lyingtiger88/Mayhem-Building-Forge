@@ -247,9 +247,9 @@ bool export_geometry_svg(const BuildingGeometry2D& geometry,
     if (geometry.entrance.defined) {
         svg << "<line x1=\"" << geometry.entrance.start_x << "\" y1=\"" << geometry.entrance.start_y
             << "\" x2=\"" << geometry.entrance.end_x << "\" y2=\"" << geometry.entrance.end_y
-            << "\" stroke=\"#16a34a\" stroke-width=\"0.16\" stroke-linecap=\"round\"/>\\n";
+            << "\" stroke=\"#16a34a\" stroke-width=\"0.16\" stroke-linecap=\"round\"/>\n";
     }
-    svg << "</g>\\n";
+    svg << "</g>\n";
     if (geometry.entrance.defined) {
         const double ex = (geometry.entrance.start_x + geometry.entrance.end_x) * 0.5;
         const double ey = (geometry.entrance.start_y + geometry.entrance.end_y) * 0.5;
@@ -258,7 +258,7 @@ bool export_geometry_svg(const BuildingGeometry2D& geometry,
             : margin + (geometry.depth_m - ey) * scale - 8.0;
         svg << "<text x=\"" << margin + ex * scale << "\" y=\"" << label_y
             << "\" font-family=\"Arial,sans-serif\" font-size=\"11\" text-anchor=\"middle\" "
-            << "fill=\"#15803d\">ENTRY</text>\\n";
+            << "fill=\"#15803d\">ENTRY</text>\n";
     }
     for (const auto& room : geometry.rooms) {
         double cx = 0.0, cy = 0.0;
