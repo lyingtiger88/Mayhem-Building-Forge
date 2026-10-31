@@ -48,3 +48,26 @@ Target areas are relative weights. The current implementation does not guarantee
 - No Unreal plugin or desktop UI is available.
 
 Treat outputs as procedural layout candidates for development and testing, not construction documents or code-compliant architectural designs.
+
+
+## 2D geometry preview (new)
+
+The sample executable now converts the generated floor plan into canonical room polygons and writes an SVG preview named `mayhem_floor_plan.svg` in the process working directory.
+
+Run it from the repository root:
+
+    .\build\Release\mbf_generate_sample.exe
+
+Open `mayhem_floor_plan.svg` in a browser or vector graphics editor. The first preview shows room regions and labels. It is a development visualization, not a construction drawing.
+
+The current 2D implementation supports:
+- grid-grown room boundaries represented as polygon rings;
+- treemap rooms represented as rectangular polygon rings;
+- area conservation validation against the building footprint;
+- SVG export for visual inspection.
+
+Not included in this first slice yet:
+- classified wall objects and wall thickness;
+- door/window placement;
+- entrance and corridor circulation graph;
+- room dimension and building-code compliance checks.
