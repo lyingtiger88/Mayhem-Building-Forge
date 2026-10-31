@@ -53,7 +53,21 @@ struct Adjacency {
     friend bool operator==(const Adjacency&, const Adjacency&) = default;
 };
 
-enum class FloorPlanAlgorithm { GridGrowth, SquarifiedTreemap };
+enum class FloorPlanAlgorithm { GridGrowth, SquarifiedTreemap, ResidentialTopologyFirst };
+enum class EntranceSide { South, North, East, West };
+
+struct Entrance2D {
+    bool defined{false};
+    EntranceSide side{EntranceSide::South};
+    RoomId room_id{};
+    double start_x{}, start_y{}, end_x{}, end_y{};
+    double clear_width_m{};
+};
+
+struct CirculationLink {
+    RoomId from_room{}, to_room{};
+    double shared_boundary_m{};
+};
 
 struct FloorPlan {
     std::uint32_t schema_version{1};
@@ -63,6 +77,8 @@ struct FloorPlan {
     std::vector<RoomRegion> rooms;
     std::vector<Adjacency> adjacency;
     std::vector<GridCell> cells;
+    Entrance2D entrance;
+    std::vector<CirculationLink> circulation_links;
 };
 
 struct GenerationSettings {
