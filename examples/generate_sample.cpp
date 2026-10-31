@@ -9,8 +9,11 @@
 int main() {
     const mbf::GenerationSettings settings{18.0, 12.0, 64U, 20261031U};
     const std::vector<mbf::RoomSpec> rooms{
-        {"Living", 28.0}, {"Kitchen", 14.0}, {"Bedroom", 18.0},
-        {"Bathroom", 7.0}, {"Hallway", 9.0}
+        {"Living", 28.0, mbf::RoomRole::Living},
+        {"Kitchen", 14.0, mbf::RoomRole::Kitchen},
+        {"Bedroom", 18.0, mbf::RoomRole::Bedroom},
+        {"Bathroom", 7.0, mbf::RoomRole::Bathroom},
+        {"Hallway", 9.0, mbf::RoomRole::Hallway}
     };
     const mbf::FloorPlanGenerator generator;
     const auto plan = generator.generate_treemap(settings, rooms);
