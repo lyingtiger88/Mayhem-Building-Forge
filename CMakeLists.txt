@@ -6,6 +6,7 @@ add_library(mbf_core
     core/src/floor_plan.cpp
     core/src/generator.cpp
     core/src/geometry2d.cpp
+    core/src/polygon.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
 target_include_directories(mbf_core PUBLIC core/include)
@@ -25,4 +26,6 @@ endif()
 if(MBF_BUILD_EXAMPLES)
     add_executable(mbf_generate_sample examples/generate_sample.cpp)
     target_link_libraries(mbf_generate_sample PRIVATE MBF::Core)
+    add_executable(mbf_polygon_demo examples/polygon_demo.cpp)
+    target_link_libraries(mbf_polygon_demo PRIVATE MBF::Core)
 endif()
