@@ -2,6 +2,7 @@
 #include "mbf/generator.hpp"
 #include "mbf/geometry2d.hpp"
 #include <cmath>
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -10,7 +11,7 @@
 #include <vector>
 namespace {
 void req(bool b,const std::string&m){if(!b){std::cerr<<"FAILED: "<<m<<'\n';std::exit(EXIT_FAILURE);}}
-std::vector<mbf::RoomSpec> sample(){return {{"Living",28},{"Kitchen",14},{"Bedroom",18},{"Bathroom",7},{"Hallway",9}};}
+std::vector<mbf::RoomSpec> sample(){return {{"Living",28,mbf::RoomRole::Living},{"Kitchen",14,mbf::RoomRole::Kitchen},{"Bedroom",18,mbf::RoomRole::Bedroom},{"Bathroom",7,mbf::RoomRole::Bathroom},{"Hallway",9,mbf::RoomRole::Hallway}};}
 void grid(){mbf::FloorPlanGenerator g;mbf::GenerationSettings s{14,10,48,123456};const auto a=g.generate_grid_growth(s,sample()),b=g.generate_grid_growth(s,sample());req(a.cells==b.cells,"fixed seed is deterministic");req(a.cells.size()==48U*34U,"grid covers footprint");req(a.rooms.size()==5U,"all rooms emitted");req(mbf::validate_floor_plan(a).valid,"grid validates");for(const auto&r:a.rooms)req(!r.cells.empty()&&r.actual_area_m2>0,"grid room has cells and area");}
 void treemap(){
  mbf::FloorPlanGenerator g;mbf::GenerationSettings s{18,12,48,99};
@@ -32,6 +33,23 @@ void treemap(){
  req(std::abs(area-s.width_m*s.depth_m)<1e-6,"treemap covers footprint");
  req(mbf::validate_floor_plan(p).valid,"treemap validates");
  req(!p.adjacency.empty(),"treemap adjacency exists");
+ const auto adjacent=[&](const std::string&a,const std::string&b){
+  mbf::RoomId ia=999999U,ib=999999U;
+  for(const auto&r:p.rooms){if(r.name==a)ia=r.id;if(r.name==b)ib=r.id;}
+  for(const auto&edge:p.adjacency)if((edge.first==ia&&edge.second==ib)||(edge.first==ib&&edge.second==ia))return true;
+  return false;
+ };
+ req(adjacent("Living","Kitchen"),"living is adjacent to kitchen");
+ req(adjacent("Living","Hallway"),"living is adjacent to hallway");
+ req(adjacent("Hallway","Bedroom"),"hallway is adjacent to bedroom");
+ req(adjacent("Hallway","Bathroom"),"hallway is adjacent to bathroom");
+ req(!adjacent("Living","Bathroom"),"bathroom is not directly adjacent to living");
+ const auto bedroom=std::find_if(p.rooms.begin(),p.rooms.end(),[](const auto&r){return r.name=="Bedroom";});
+ req(bedroom!=p.rooms.end(),"bedroom exists");
+ const auto&br=bedroom->bounds;
+ const double edge_gap=std::min({br.x,br.y,s.width_m-(br.x+br.width),s.depth_m-(br.y+br.height)});
+ req(edge_gap<1e-6,"bedroom is placed on the building perimeter");
+
 }
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
