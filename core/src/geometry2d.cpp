@@ -152,10 +152,14 @@ std::vector<BoundarySegment2D> classify_boundaries(const BuildingGeometry2D& geo
         }
         const double length=distance(e.a,e.b);
         if(length<=tolerance) { consumed[i]=true; continue; }
-        const bool exterior=near(e.a.x,0.0)&&near(e.b.x,0.0) ||
-            near(e.a.x,geometry.width_m)&&near(e.b.x,geometry.width_m) ||
-            near(e.a.y,0.0)&&near(e.b.y,0.0) ||
-            near(e.a.y,geometry.depth_m)&&near(e.b.y,geometry.depth_m);
+        const bool exterior=(near(e.a.x,0.0)&&near(e.b.x,0.0)) ||
+            (near(e.a.x,geometry.width_m)&&near(e.b.x,geometry.width_m)) ||
+            (near(e.a.y,0.0)&&near(e.b.y,0.0)) ||
+            (near(e.a.y,geometry.depth_m)&&near(e.b.y,geometry.depth_m));
+        // An interior edge is emitted only when the opposite room owns the
+        // exact same segment. Partial/collinear edge overlaps are handled by
+        // a later edge-normalization step, not guessed here.
+        if(!exterior && partner==edges.size()) { consumed[i]=true; continue; }
         BoundarySegment2D boundary;
         boundary.id=next_id++;
         boundary.start=e.a; boundary.end=e.b; boundary.length_m=length;
