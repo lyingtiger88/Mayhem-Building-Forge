@@ -4,7 +4,7 @@
 
 Mayhem Building Forge (MBF) is planned as a hybrid desktop authoring tool and Unreal Engine integration. Its long-term purpose is to generate believable buildings at scale while keeping architectural rules and generation logic independent of any one rendering engine.
 
-> **Status: Early foundation / pre-alpha.** The repository currently contains an initial C++20 floor-plan core with grid-growth and weighted rectangular subdivision algorithms. The desktop interface, 3D pipeline, furnishing system, and Unreal integration are not implemented yet.
+> **Status: Early foundation / pre-alpha.** The repository contains a C++20 architectural geometry core, an initial rule-based two-bedroom residential planner, candidate profiles, geometric validation, a repeated-floor data model, and a first parameter-driven command-line house generator. The desktop interface, 3D mesh pipeline, furnishing system, and Unreal integration are not implemented yet.
 
 [Documentation Index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Getting Started](docs/GETTING_STARTED.md) · [User Guide](docs/USER_GUIDE.md) · [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md) · [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md) · [Reference Analysis](docs/REFERENCE_ANALYSIS.md) · [Contributing](CONTRIBUTING.md)
 
@@ -78,16 +78,23 @@ The current C++20 core provides:
 - Deterministic grid-growth floor-plan generation.
 - Weighted rectangular / treemap-style subdivision.
 - Room-cell ownership and room adjacency output.
-- Basic floor-plan validation.
+- Polygon geometry, concave region and courtyard partition validation, polygon offsets, and uniform lot setback calculations.
+- A deterministic five-room / two-bedroom residential prototype with south-side entrance and three zoning profiles.
+- Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.
+- Candidate generation and ranking for supported residential profiles.
+- Repeated-floor building data and preliminary stair/elevator core footprint validation.
+- A parameter-driven `mbf_build_house` command-line prototype that exports an SVG plan and reports the generated brief.
 - CMake build configuration, sample executable, and automated tests.
 - GitHub Actions build-and-test workflow.
 
 ### Not implemented yet
 - Desktop GUI and visual floor-plan editor.
+- General room-schedule solving (arbitrary bedroom/bathroom counts and custom room lists).
 - 3D mesh generation.
 - Doors, windows, stairs, elevators, or facade generation.
 - Furniture and complete interior generation.
-- Multi-floor building assembly.
+- Actual stair flights, landings, elevator doors, and traversable vertical circulation.
+- Multi-floor plan variation and structural alignment beyond the initial repeated-floor data model.
 - Unreal Engine plugin or packaged Unreal assets.
 - City-scale streaming, profiling, and multiplayer.
 
