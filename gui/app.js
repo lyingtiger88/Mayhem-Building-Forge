@@ -34,6 +34,48 @@ function addSvgDownload(card,svg,filename){
  const link=document.createElement("a");link.textContent="Download SVG";link.download=filename;link.href=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml"}));link.style.display="inline-block";link.style.margin="0 12px 12px";link.style.color="#9fc2ff";link.style.fontWeight="700";card.append(link);
 }
 
+function mountFurnitureEditor(card,preview,svgText,filename){
+ const doc=new DOMParser().parseFromString(svgText,"image/svg+xml");
+ const root=doc.documentElement;
+ if(root.localName!=="svg"||doc.querySelector("parsererror"))throw new Error("Generated SVG could not be opened for editing");
+ root.setAttribute("width","100%");root.removeAttribute("height");root.style.maxHeight="560px";root.style.display="block";
+ preview.append(document.importNode(root,true));
+ const svg=preview.querySelector("svg");
+ const items=[...svg.querySelectorAll("#FURNITURE [data-furniture-id]")];
+ const initial=items.map(el=>({x:el.dataset.x,y:el.dataset.y,rotation:el.dataset.rotation}));
+ const toolbar=document.createElement("div");toolbar.className="furniture-toolbar";
+ const edit=document.createElement("button");edit.type="button";edit.className="secondary";edit.textContent="Enable furniture editing";
+ const rotate=document.createElement("button");rotate.type="button";rotate.className="secondary";rotate.textContent="Rotate selected 90°";rotate.disabled=true;
+ const reset=document.createElement("button");reset.type="button";reset.className="secondary";reset.textContent="Reset layout";
+ const download=document.createElement("button");download.type="button";download.textContent="Download edited SVG";
+ const status=document.createElement("small");status.textContent=items.length+" furniture objects · select and drag to move";
+ toolbar.append(edit,rotate,reset,download,status);card.insertBefore(toolbar,preview);
+ let enabled=false,selected=null,drag=null;
+ const setTransform=el=>{
+  const x=Number(el.dataset.x),y=Number(el.dataset.y),w=Number(el.dataset.width),h=Number(el.dataset.depth),r=Number(el.dataset.rotation||0);
+  el.setAttribute("transform","translate("+(x+w/2)+" "+(y+h/2)+") rotate("+r+") translate("+(-w/2)+" "+(-h/2)+")");
+ };
+ const bounds=el=>{
+  const x=Number(el.dataset.x),y=Number(el.dataset.y),w=Number(el.dataset.width),h=Number(el.dataset.depth),r=((Number(el.dataset.rotation||0)%180)+180)%180;
+  return r===90?{x:x+(w-h)/2,y:y+(h-w)/2,w:h,h:w}:{x,y,w,h};
+ };
+ const collision=(el)=>{
+  const a=bounds(el);
+  return items.some(other=>{if(other===el||other.dataset.roomId!==el.dataset.roomId)return false;const b=bounds(other),g=.18;
+   return a.x-g<b.x+b.w+g&&a.x+a.w+g>b.x-g&&a.y-g<b.y+b.h+g&&a.y+a.h+g>b.y-g;});
+ };
+ const point=e=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
+ const select=el=>{if(selected)selected.style.filter="";selected=el;if(selected)selected.style.filter="drop-shadow(0 0 2px #d97706)";rotate.disabled=!selected;};
+ edit.addEventListener("click",()=>{enabled=!enabled;edit.textContent=enabled?"Finish editing":"Enable furniture editing";status.textContent=enabled?"Drag furniture to reposition; select an item to rotate.":"Editing paused.";svg.style.cursor=enabled?"grab":"default";});
+ rotate.addEventListener("click",()=>{if(!selected)return;const old=selected.dataset.rotation;selected.dataset.rotation=String((Number(old||0)+90)%360);setTransform(selected);if(collision(selected)){selected.dataset.rotation=old;setTransform(selected);status.textContent="Rotation rejected: furniture clearance would overlap."; }});
+ reset.addEventListener("click",()=>{items.forEach((el,i)=>{el.dataset.x=initial[i].x;el.dataset.y=initial[i].y;el.dataset.rotation=initial[i].rotation;setTransform(el);});status.textContent="Original generated layout restored.";});
+ download.addEventListener("click",()=>{const output=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([output],{type:"image/svg+xml"}));const a=document.createElement("a");a.href=url;a.download=filename.replace(".svg","-edited.svg");a.click();URL.revokeObjectURL(url);});
+ items.forEach(el=>{el.style.cursor="grab";el.addEventListener("pointerdown",e=>{if(!enabled||el.dataset.movable!=="true")return;e.preventDefault();select(el);const p=point(e);drag={el,start:p,x:Number(el.dataset.x),y:Number(el.dataset.y)};el.setPointerCapture?.(e.pointerId);});});
+ svg.addEventListener("pointermove",e=>{if(!drag)return;const p=point(e),el=drag.el;el.dataset.x=String(drag.x+p.x-drag.start.x);el.dataset.y=String(drag.y+p.y-drag.start.y);setTransform(el);});
+ svg.addEventListener("pointerup",()=>{if(!drag)return;if(collision(drag.el)){drag.el.dataset.x=String(drag.x);drag.el.dataset.y=String(drag.y);setTransform(drag.el);status.textContent="Move rejected: overlaps another furniture object."; }else status.textContent="Furniture position updated.";drag=null;});
+ svg.addEventListener("pointercancel",()=>{if(drag){drag.el.dataset.x=String(drag.x);drag.el.dataset.y=String(drag.y);setTransform(drag.el);drag=null;}});
+}
+
 $("brief").addEventListener("submit",async e=>{
  e.preventDefault();const button=$("generate");button.disabled=true;$("status").textContent="Generating with native C++ engine…";
  $("results").className="empty";$("results").textContent="Running geometry generation and validation…";
@@ -62,7 +104,9 @@ $("brief").addEventListener("submit",async e=>{
    for(const plan of payload.topology_plans){
     const card=document.createElement("article");card.className="result";
     const head=document.createElement("div");head.className="result-head";const name=document.createElement("b");name.textContent=plan.profile;const tag=document.createElement("span");tag.textContent="RANK #"+(plan.rank||"?")+" · TOPOLOGY SOLVED";head.append(name,tag);card.append(head);
-    const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Topology-derived floor plan "+plan.profile;img.src=URL.createObjectURL(new Blob([plan.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);addSvgDownload(card,plan.svg,"mayhem-"+plan.profile.toLowerCase().replace(/[^a-z0-9]+/g,"-")+".svg");
+    const preview=document.createElement("div");preview.className="preview";card.append(preview);
+    const planFilename="mayhem-"+plan.profile.toLowerCase().replace(/[^a-z0-9]+/g,"-")+".svg";
+    mountFurnitureEditor(card,preview,plan.svg,planFilename);
     if(plan.quality&&Object.keys(plan.quality).length){const metrics=document.createElement("div");metrics.className="metrics";for(const [key,label] of [["daylight","Daylight potential"],["privacy","Privacy"],["circulation","Circulation"],["overall","Overall quality"],["doors","Doors"],["windows","Windows"],["openings","Openings"],["open-plan","Open-plan links"],["accessible","Rooms accessible"]]){if(plan.quality[key]===undefined)continue;const item=document.createElement("div");item.className="metric";const caption=document.createElement("small");caption.textContent=label;const value=document.createElement("b");value.textContent=typeof plan.quality[key]==="number"?(key==="doors"||key==="windows"||key==="openings"||key==="open-plan"?String(Math.round(plan.quality[key])):Math.round(plan.quality[key])+"/100"):String(plan.quality[key]);item.append(caption,value);metrics.append(item)}card.append(metrics)}
     if(plan.warnings&&plan.warnings.length){const warnings=document.createElement("div");warnings.className="details";warnings.textContent="Diagnostics:\n• "+plan.warnings.join("\n• ");card.append(warnings)}
     plansHost.append(card);
