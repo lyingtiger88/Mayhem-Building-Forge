@@ -16,6 +16,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_gui_server.py' -v
       - name: Check Python syntax
         run: python -m py_compile scripts/mbf_gui_server.py tests/test_gui_server.py
+      - name: Check Parametric Lab JavaScript syntax
+        run: node --check gui/app.js
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
