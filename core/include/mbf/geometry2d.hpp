@@ -141,4 +141,8 @@ void rebuild_wall_pieces(WallTopology2D& topology, double tolerance = 1e-7);
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
+[[nodiscard]] bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
+                                            const WallTopology2D& topology,
+                                            const std::string& output_path,
+                                            std::string* error = nullptr);
 } // namespace mbf
