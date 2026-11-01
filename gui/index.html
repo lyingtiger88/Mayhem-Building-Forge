@@ -42,8 +42,8 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 </section></main>
 <script>
 const $=id=>document.getElementById(id);
-const fields=["width","depth","south","north","east","west","floors","bedrooms","seed","profile"];
-const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,floors:1,bedrooms:1,seed:42,profile:"all"};
+const fields=["width","depth","south","north","east","west","floors","bedrooms","bathrooms","seed","profile"];
+const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
 $("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k]});
 $("brief").addEventListener("submit",async e=>{
  e.preventDefault();const button=$("generate");button.disabled=true;$("status").textContent="Generating with native C++ engine…";
