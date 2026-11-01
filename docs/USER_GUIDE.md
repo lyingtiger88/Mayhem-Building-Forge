@@ -2,7 +2,7 @@
 
 ## What can I do today?
 
-The repository is currently a developer-facing core foundation. There is no graphical application yet. You can compile the library, run its sample, and use its public C++ interfaces in another program.
+The repository is a pre-alpha developer-facing architecture engine. A local browser-based Parametric Lab is available for testing the native topology-driven generator; a full desktop editor is not yet implemented.
 
 ## Current workflow
 
@@ -11,6 +11,16 @@ The repository is currently a developer-facing core foundation. There is no grap
 3. The sample uses generate_treemap by default for a clean, rectilinear room layout. Select generate_grid_growth only when inspecting experimental cell-growth behaviour.
 4. Run the sample and inspect room areas and adjacency count.
 5. Run CTest after changing the core.
+
+## Parametric Lab
+
+On Windows, build and start the local browser-based test bench:
+
+    .\\scripts\\run_parametric_lab.ps1
+
+Then open `http://127.0.0.1:8765`. The Lab supports site dimensions, setbacks, entrance facade, 1–4 bedrooms, 1–4 bathrooms, JSON brief import/export, ranked candidate previews, heuristic quality metrics, and SVG downloads. See [Parametric Lab Guide](PARAMETRIC_LAB.md).
+
+The topology-driven solver is experimental and currently supports one floor with rectangular room partitions. It is not a construction design or code-compliance tool.
 
 ## Choosing an algorithm
 
@@ -45,7 +55,7 @@ Target areas are relative weights. The current implementation does not guarantee
 - Adjacency does not mean a traversable doorway exists.
 - Treemap rectangles are not rasterized into grid cells.
 - Multi-floor structures and vertical circulation are not implemented.
-- No Unreal plugin or desktop UI is available.
+- No Unreal plugin or full desktop authoring application is available; use the local Parametric Lab for current visual testing.
 
 Treat outputs as procedural layout candidates for development and testing, not construction documents or code-compliant architectural designs.
 
