@@ -255,10 +255,6 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
     }
     check(settings,rooms);
 
-    const auto ordered_pair=[](RoomId a,RoomId b) {
-        if(a>b)std::swap(a,b);
-        return std::pair<RoomId,RoomId>{a,b};
-    };
     const auto avoided_roles=[&](RoomRole a,RoomRole b) {
         if(static_cast<int>(a)>static_cast<int>(b))std::swap(a,b);
         for(const auto& rule:brief.adjacency) {
