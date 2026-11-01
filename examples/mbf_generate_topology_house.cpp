@@ -70,6 +70,7 @@ int main(int argc,char** argv) {
         std::cout<<"MAYHEM TOPOLOGY-DRIVEN HOUSE GENERATION\n";
         std::cout<<"Buildable footprint: "<<settings.width_m<<" x "<<settings.depth_m<<" m\n";
         std::cout<<"Requested bedrooms: "<<bedrooms<<"\n";
+        std::cout<<"Requested bathrooms: "<<bathrooms<<"\n";
         for(const auto& topology:topologies) {
             try {
                 const auto plan=generator.generate_topology_layout(settings,brief,topology);
