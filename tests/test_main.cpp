@@ -253,6 +253,11 @@ void room_topology_generation(){
  auto brief=make_default_residential_brief();
  auto candidates=generate_room_topology_candidates(brief);
  req(candidates.size()>=2U,"default brief generates multiple distinct room topologies");
+ const auto graph_svg=std::filesystem::temp_directory_path()/"mayhem_topology_candidates_test.svg";
+ std::string graph_error;
+ req(export_room_topologies_svg(candidates,graph_svg.string(),&graph_error),"topology graph SVG export succeeds");
+ req(std::filesystem::file_size(graph_svg)>100U,"topology graph SVG is not empty");
+ std::filesystem::remove(graph_svg);
  std::set<std::string> signatures;
  for(const auto& candidate:candidates){
   std::vector<std::string> diagnostics;
