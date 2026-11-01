@@ -60,7 +60,13 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [x] Build a room-access graph from entrance, interior-door, and open-plan openings; report rooms unreachable from an exterior entrance.
 - [x] Validate access-opening clear widths and enforce entrance-door placement on exterior walls.
 - [x] Validate minimum clear width of hallway zones and construct per-side door approach clearance envelopes; reject approaches that extend outside the served room.
-- [x] Add first-pass procedural 2D furniture symbols to SVG output by room role.\n- [x] Add typed furniture entities with stable IDs, room ownership, dimensions, position, rotation, mobility, and collision flags.\n- [x] Add deterministic room-aware furniture placement with polygon-boundary and inter-object clearance validation.\n- [x] Render furniture entities as individually identifiable SVG groups with editable transform metadata.\n- [x] Add local GUI editing: select, drag, rotate by 90 degrees, reset generated positions, and export edited SVG.\n- [ ] Persist edited furniture layouts back into versioned Building Brief/project data and the native generator.\n- [ ] Validate furniture against door swings, window access, and continuous circulation paths; add turning-space checks.
+- [x] Add first-pass procedural 2D furniture symbols to SVG output by room role.
+- [x] Add typed furniture entities with stable IDs, room ownership, dimensions, position, rotation, mobility, and collision flags.
+- [x] Add deterministic room-aware furniture placement with polygon-boundary and inter-object clearance validation.
+- [x] Render furniture entities as individually identifiable SVG groups with editable transform metadata.
+- [x] Add local GUI editing: select, drag, rotate by 90 degrees, reset generated positions, and export edited SVG.
+- [ ] Persist edited furniture layouts back into versioned Building Brief/project data and the native generator.
+- [ ] Validate furniture against door swings, window access, and continuous circulation paths; add turning-space checks.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [x] Add semantic door/window opening records with stable IDs, dimensions, sill heights, and room ownership.
 - [x] Validate door/open-plan openings on shared walls and windows on exterior walls only.
