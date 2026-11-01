@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -369,6 +371,15 @@ void topology_to_geometry_solver(){
    req(export_wall_topology_svg(geometry.geometry,wall_topology,wall_svg.string(),&wall_error),
        "architectural SVG exports wall and opening overlays");
    req(std::filesystem::file_size(wall_svg)>100U,"wall and opening SVG is not empty");
+   std::ifstream svg_input(wall_svg);
+   const std::string svg_text((std::istreambuf_iterator<char>(svg_input)),
+                               std::istreambuf_iterator<char>());
+   req(svg_text.find("MAYHEM  /  FLOOR PLAN")!=std::string::npos,
+       "architectural SVG includes the branded title");
+   req(svg_text.find("scale(1 -1)")!=std::string::npos,
+       "room typography compensates for the inverted geometry axis");
+   req(svg_text.find(" m2</text>")!=std::string::npos,
+       "architectural SVG annotates room area");
    std::filesystem::remove(wall_svg);
    selected=std::move(plan);solved=true;break;
   } catch(const std::runtime_error&) {
