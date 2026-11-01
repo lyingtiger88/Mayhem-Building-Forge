@@ -263,6 +263,7 @@ void building_brief_contract(){
  setbacks.site_width_m=20.0;setbacks.site_depth_m=15.0;
  setbacks.setback_west_m=2.0;setbacks.setback_east_m=1.0;
  setbacks.setback_south_m=3.0;setbacks.setback_north_m=2.0;
+ setbacks.entrance_side=EntranceSide::East;
  const auto setback_result=validate_building_brief(setbacks);
  req(setback_result.valid,"reasonable site setbacks validate");
  req(std::abs(setback_result.buildable_width_m-17.0)<1e-9&&
