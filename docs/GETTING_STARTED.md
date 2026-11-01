@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide builds the current MBF C++ core. It does not require Unreal Engine or a desktop GUI because neither integration is available yet.
+This guide builds the MBF C++ core and launches the local browser-based Parametric Lab. Unreal Engine integration and the full desktop authoring application are not yet available.
 
 ## 1. Prerequisites
 
@@ -41,7 +41,7 @@ Linux:
 
 For a single-configuration Linux generator, omit -C Release.
 
-Current tests check deterministic grid output, grid coverage, non-empty rooms, treemap area coverage, adjacency output, and rejection of invalid dimensions. These are foundation tests, not a full architectural compliance suite.
+Current tests cover deterministic geometry, topology graph constraints, topology-to-rectangle solving, facade entrances, room access through openings, role-aware windows/open-plan links, spatial-quality scoring, and Parametric Lab request validation. These are development tests, not a full architectural compliance suite.
 
 ## 5. Generate a parametric residential house
 
@@ -76,7 +76,23 @@ The initial room-topology graph generator can also be run independently:
 
 This exports relationship graphs for inspection. It does not yet solve those graphs into room polygons.
 
-## 6. Open the graphical Parametric Lab
+## 6. Generate a topology-driven residential plan
+
+The experimental topology solver accepts 1–4 bedrooms, 1–4 bathrooms, and an entrance facade:
+
+```powershell
+.\\build\\Release\\mbf_generate_topology_house.exe --width 18 --depth 12 --bedrooms 3 --bathrooms 2 --entrance-side east --floors 1 --seed 42 --output-prefix house
+```
+
+It exports SVG candidates only when the current geometry, wall-opening, and room-access checks pass. This solver currently supports one floor and rectangular guillotine partitions.
+
+The standalone graph preview is:
+
+```powershell
+.\\build\\Release\\mbf_topology_preview.exe --bedrooms 3 --bathrooms 2 --output topologies.svg
+```
+
+## 7. Open the graphical Parametric Lab
 
 On Windows, run:
 
@@ -86,7 +102,7 @@ On Windows, run:
 
 Then open `http://127.0.0.1:8765`. The browser UI invokes the native C++ generator through a local Python server. See [Parametric Lab Guide](PARAMETRIC_LAB.md).
 
-## 7. Run the sample
+## 8. Run the sample
 
 Windows Visual Studio generator:
 
@@ -98,7 +114,7 @@ Linux or single-configuration build:
 
 The sample generates a seeded floor plan and prints each room's area, cell count, and number of room adjacencies.
 
-## 8. Modify the sample
+## 9. Modify the sample
 
 Edit examples/generate_sample.cpp to change:
 - building width and depth in metres;
@@ -108,7 +124,7 @@ Edit examples/generate_sample.cpp to change:
 
 Rebuild and run again. Current room areas are approximate weighted shares; minimum room dimensions and architectural circulation rules are not enforced yet.
 
-## 9. Further reading
+## 10. Further reading
 
 - Product capabilities and limitations: README.md
 - Technical design: ARCHITECTURE.md
