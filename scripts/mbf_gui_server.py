@@ -17,7 +17,10 @@ NUMERIC_RANGES = {
     "width": (8.0, 100.0), "depth": (7.0, 100.0),
     "south": (0.0, 100.0), "north": (0.0, 100.0),
     "east": (0.0, 100.0), "west": (0.0, 100.0),
-    "floors": (1, 200), "bedrooms": (1, 4), "bathrooms": (1, 4),\n    "living_area": (16.0, 60.0), "kitchen_area": (8.0, 30.0),\n    "bedroom_area": (10.0, 30.0), "bathroom_area": (3.5, 15.0),\n    "hallway_area": (5.0, 20.0), "seed": (0, 2**63 - 1),
+    "floors": (1, 200), "bedrooms": (1, 4), "bathrooms": (1, 4),
+    "living_area": (16.0, 60.0), "kitchen_area": (8.0, 30.0),
+    "bedroom_area": (10.0, 30.0), "bathroom_area": (3.5, 15.0),
+    "hallway_area": (5.0, 20.0), "seed": (0, 2**63 - 1),
 }
 PROFILES = ("balanced", "open", "privacy")
 ENTRANCE_SIDES = ("south", "north", "east", "west")
@@ -228,12 +231,15 @@ def main():
     executable = (ROOT / args.exe).resolve() if not Path(args.exe).is_absolute() else Path(args.exe)
     topology_executable = (ROOT / args.topology_exe).resolve() if not Path(args.topology_exe).is_absolute() else Path(args.topology_exe)
     if not executable.is_file():
-        raise SystemExit(f"Generator executable not found: {executable}\nBuild it first with: cmake --build build --config Release")
+        raise SystemExit(f"Generator executable not found: {executable}
+Build it first with: cmake --build build --config Release")
     topology_house_executable = (ROOT / args.topology_house_exe).resolve() if not Path(args.topology_house_exe).is_absolute() else Path(args.topology_house_exe)
     if not topology_executable.is_file():
-        raise SystemExit(f"Topology preview executable not found: {topology_executable}\nBuild it first with: cmake --build build --config Release")
+        raise SystemExit(f"Topology preview executable not found: {topology_executable}
+Build it first with: cmake --build build --config Release")
     if not topology_house_executable.is_file():
-        raise SystemExit(f"Topology house generator not found: {topology_house_executable}\nBuild it first with: cmake --build build --config Release")
+        raise SystemExit(f"Topology house generator not found: {topology_house_executable}
+Build it first with: cmake --build build --config Release")
     if not (1 <= args.port <= 65535):
         raise SystemExit("Port must be between 1 and 65535.")
     Handler.executable = executable
@@ -246,7 +252,8 @@ def main():
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopping Mayhem Parametric Lab.")
+        print("
+Stopping Mayhem Parametric Lab.")
     finally:
         server.server_close()
 
