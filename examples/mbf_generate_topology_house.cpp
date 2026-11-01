@@ -14,7 +14,7 @@ int main(int argc,char** argv) {
     try {
         double width=18.0,depth=12.0;
         double south=0.0,north=0.0,east=0.0,west=0.0;
-        std::uint32_t bedrooms=1;
+        std::uint32_t bedrooms=1,floors=1;
         std::uint64_t seed=42;
         std::string prefix="mayhem_topology_house";
         for(int i=1;i<argc;++i) {
@@ -22,7 +22,7 @@ int main(int argc,char** argv) {
             if(arg=="--help") {
                 std::cout<<"Usage: mbf_generate_topology_house [--width M] [--depth M] "
                          <<"[--setback-south M] [--setback-north M] [--setback-east M] "
-                         <<"[--setback-west M] [--bedrooms N] [--seed N] [--output-prefix PATH]\n";
+                         <<"[--setback-west M] [--bedrooms N] [--floors N] [--seed N] [--output-prefix PATH]\n";
                 return EXIT_SUCCESS;
             }
             if(i+1>=argc)throw std::invalid_argument("Missing value after "+arg);
@@ -37,6 +37,10 @@ int main(int argc,char** argv) {
                 const auto n=std::stoul(value);
                 if(n<1U||n>4U)throw std::invalid_argument("--bedrooms must be between 1 and 4.");
                 bedrooms=static_cast<std::uint32_t>(n);
+            } else if(arg=="--floors") {
+                const auto n=std::stoul(value);
+                if(n!=1U)throw std::invalid_argument("The topology-driven geometric solver currently supports one floor. Multi-floor generation is not yet integrated.");
+                floors=static_cast<std::uint32_t>(n);
             } else if(arg=="--seed")seed=std::stoull(value);
             else if(arg=="--output-prefix")prefix=value;
             else throw std::invalid_argument("Unknown option: "+arg);
@@ -45,7 +49,7 @@ int main(int argc,char** argv) {
         brief.site_width_m=width;brief.site_depth_m=depth;
         brief.setback_south_m=south;brief.setback_north_m=north;
         brief.setback_east_m=east;brief.setback_west_m=west;
-        brief.rooms[2].count=bedrooms;brief.seed=seed;
+        brief.rooms[2].count=bedrooms;brief.floor_count=floors;brief.seed=seed;
         const auto brief_check=validate_building_brief(brief);
         if(!brief_check.valid) {
             for(const auto& error:brief_check.errors)std::cerr<<"Brief error: "<<error<<'\n';
