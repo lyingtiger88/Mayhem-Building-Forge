@@ -255,10 +255,24 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
     }
     check(settings,rooms);
 
+    const auto ordered_pair=[](RoomId a,RoomId b) {
+        if(a>b)std::swap(a,b);
+        return std::pair<RoomId,RoomId>{a,b};
+    };
+    const auto avoided_roles=[&](RoomRole a,RoomRole b) {
+        for(const auto& rule:brief.adjacency)
+            if(rule.strength==AdjacencyStrength::Avoid) {
+                auto first=rule.first,second=rule.second;
+                if(static_cast<int>(first)>static_cast<int>(second))std::swap(first,second);
+                if(ordered_pair(static_cast<RoomId>(a),static_cast<RoomId>(b))==
+                   ordered_pair(static_cast<RoomId>(first),static_cast<RoomId>(second)))return true;
+            }
+        return false;
+    };
     const auto has_topology_edge=[&](RoomId a,RoomId b) {
-        const auto key=ordered_ids(a,b);
+        const auto key=ordered_pair(a,b);
         return std::any_of(topology.edges.begin(),topology.edges.end(),[&](const auto& edge){
-            return ordered_ids(edge.first,edge.second)==key;
+            return ordered_pair(edge.first,edge.second)==key;
         });
     };
     FloorPlan best;
@@ -282,7 +296,7 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
                    bounds.height+1e-7<requirement.minimum_depth_m)return;
                 for(std::size_t j=i+1;j<candidate.rooms.size();++j) {
                     if(shared_length(bounds,candidate.rooms[j].bounds)<=1e-7)continue;
-                    if(is_avoided(brief,candidate.rooms[i].role,candidate.rooms[j].role))return;
+                    if(avoided_roles(candidate.rooms[i].role,candidate.rooms[j].role))return;
                 }
             }
             double score=layout_score(candidate,roles)+topology.quality_score;
