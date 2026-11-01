@@ -17,7 +17,7 @@ NUMERIC_RANGES = {
     "width": (8.0, 100.0), "depth": (7.0, 100.0),
     "south": (0.0, 100.0), "north": (0.0, 100.0),
     "east": (0.0, 100.0), "west": (0.0, 100.0),
-    "floors": (1, 200), "bedrooms": (1, 4), "seed": (0, 2**63 - 1),
+    "floors": (1, 200), "bedrooms": (1, 4), "bathrooms": (1, 4), "seed": (0, 2**63 - 1),
 }
 PROFILES = ("balanced", "open", "privacy")
 
@@ -68,11 +68,11 @@ def generate(executable: Path, values, profile: str):
         return result
 
 
-def generate_topology_preview(executable: Path, bedrooms: int):
+def generate_topology_preview(executable: Path, bedrooms: int, bathrooms: int):
     with tempfile.TemporaryDirectory(prefix="mbf-topology-") as temp:
         output = Path(temp) / "topologies.svg"
         completed = subprocess.run(
-            [str(executable), "--bedrooms", str(bedrooms), "--output", str(output)],
+            [str(executable), "--bedrooms", str(bedrooms), "--bathrooms", str(bathrooms), "--output", str(output)],
             cwd=ROOT, capture_output=True, text=True, timeout=45, check=False,
         )
         return {
@@ -89,7 +89,7 @@ def generate_topology_plans(executable: Path, values):
             str(executable), "--width", str(values["width"]), "--depth", str(values["depth"]),
             "--setback-south", str(values["south"]), "--setback-north", str(values["north"]),
             "--setback-east", str(values["east"]), "--setback-west", str(values["west"]),
-            "--bedrooms", str(values["bedrooms"]), "--floors", str(values["floors"]), "--seed", str(values["seed"]),
+            "--bedrooms", str(values["bedrooms"]), "--bathrooms", str(values["bathrooms"]), "--floors", str(values["floors"]), "--seed", str(values["seed"]),
             "--output-prefix", str(prefix),
         ]
         completed = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
@@ -159,7 +159,7 @@ class Handler(BaseHTTPRequestHandler):
             requested = PROFILES if profile == "all" else (profile,)
             candidates = [generate(self.executable, values, item) for item in requested]
             good = [candidate for candidate in candidates if candidate["ok"]]
-            topology = generate_topology_preview(self.topology_executable, values["bedrooms"])
+            topology = generate_topology_preview(self.topology_executable, values["bedrooms"], values["bathrooms"])
             topology_plans = generate_topology_plans(self.topology_house_executable, values)
             message = "" if good else "The legacy profile generator did not produce a valid floor plan. See diagnostics."
             body = json.dumps({
