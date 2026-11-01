@@ -25,6 +25,11 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 <div class="field"><label for="floors">Floors</label><input id="floors" type="number" min="1" max="1" value="1"></div>
 <div class="field"><label for="bedrooms">Bedrooms requested</label><input id="bedrooms" type="number" min="1" max="4" value="1"></div>
 <div class="field"><label for="bathrooms">Bathrooms requested</label><input id="bathrooms" type="number" min="1" max="4" value="1"></div>
+<div class="field"><label for="living_area">Living target area (m²)</label><input id="living_area" type="number" min="16" max="60" step=".5" value="24"></div>
+<div class="field"><label for="kitchen_area">Kitchen target area (m²)</label><input id="kitchen_area" type="number" min="8" max="30" step=".5" value="12"></div>
+<div class="field"><label for="bedroom_area">Bedroom target area (m²)</label><input id="bedroom_area" type="number" min="10" max="30" step=".5" value="14"></div>
+<div class="field"><label for="bathroom_area">Bathroom target area (m²)</label><input id="bathroom_area" type="number" min="3.5" max="15" step=".5" value="6"></div>
+<div class="field"><label for="hallway_area">Hallway target area (m²)</label><input id="hallway_area" type="number" min="5" max="20" step=".5" value="8"></div>
 <div class="field"><label for="seed">Generation seed</label><input id="seed" type="number" min="0" value="42"></div>
 <div class="field"><label for="profile">Design variations</label><select id="profile"><option value="all">Generate all current profiles</option><option value="balanced">Balanced conventional</option><option value="open">Open living</option><option value="privacy">Privacy first</option></select></div>
 </div>
