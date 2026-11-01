@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mayhem Building Forge — Parametric Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#131b2e;--panel2:#19243a;--line:#293650;--text:#e8eef9;--muted:#9eabc2;--accent:#73a7ff;--good:#55d6a0;--bad:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#1b2c4d 0,transparent 42%),var(--bg);color:var(--text);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{padding:22px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:21px;margin:0;letter-spacing:.02em}header p{margin:4px 0 0;color:var(--muted)}.pill{border:1px solid #35527e;color:#b8d2ff;border-radius:30px;padding:5px 11px;font-size:12px}
+main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18px;max-width:1600px;margin:auto}.panel{background:linear-gradient(160deg,var(--panel),#10182a);border:1px solid var(--line);border-radius:14px;overflow:hidden}.panel h2{font-size:15px;margin:0;padding:15px 17px;border-bottom:1px solid var(--line)}.form{padding:16px;display:grid;gap:13px}.group{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}label{font-size:12px;color:var(--muted)}input,select{width:100%;background:#0b1324;color:var(--text);border:1px solid #34435e;border-radius:8px;padding:9px 10px;font:inherit;min-width:0}input:focus,select:focus{outline:2px solid #477ed0;border-color:transparent}.hint{font-size:11px;color:var(--muted)}button{border:0;border-radius:9px;padding:11px 14px;background:var(--accent);color:#081326;font-weight:700;font-size:14px;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.secondary{background:#263651;color:var(--text)}.note{padding:11px 12px;background:#332b1b;border:1px solid #6d572b;color:#f0d9a5;border-radius:9px;font-size:12px}.workspace{display:grid;gap:18px;align-content:start}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}.toolbar strong{font-size:14px}.status{color:var(--muted);font-size:12px}.results{padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.result{background:#0c1425;border:1px solid var(--line);border-radius:12px;overflow:hidden}.result-head{padding:10px 12px;display:flex;justify-content:space-between;align-items:center}.result-head b{font-size:13px}.result-head span{font-size:11px;color:var(--muted)}.preview{background:#e8e8e8;min-height:260px;display:grid;place-items:center;padding:8px}.preview img{width:100%;height:340px;object-fit:contain}.details{padding:10px 12px;color:var(--muted);font-size:12px;white-space:pre-wrap}.empty{padding:55px 20px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}.footer{padding:12px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
+@media(max-width:850px){main{grid-template-columns:1fr;padding:10px}header{padding:16px;align-items:flex-start;flex-direction:column}.results{grid-template-columns:1fr}.preview img{height:300px}}
+</style></head>
+<body>
+<header><div><h1>MAYHEM <span style="color:#83b4ff">BUILDING FORGE</span></h1><p>Parametric Lab · local generation using the native C++ engine</p></div><span class="pill">EARLY DEVELOPMENT · 2D TEST BENCH</span></header>
+<main>
+<section class="panel"><h2>Building Brief</h2><form id="brief" class="form">
+<div class="group">
+<div class="field"><label for="width">Site width (m)</label><input id="width" type="number" min="8" max="100" step=".5" value="20" required></div>
+<div class="field"><label for="depth">Site depth (m)</label><input id="depth" type="number" min="7" max="100" step=".5" value="15" required></div>
+<div class="field"><label for="south">South setback (m)</label><input id="south" type="number" min="0" step=".5" value="3"></div>
+<div class="field"><label for="north">North setback (m)</label><input id="north" type="number" min="0" step=".5" value="2"></div>
+<div class="field"><label for="east">East setback (m)</label><input id="east" type="number" min="0" step=".5" value="1"></div>
+<div class="field"><label for="west">West setback (m)</label><input id="west" type="number" min="0" step=".5" value="2"></div>
+<div class="field"><label for="floors">Floors</label><input id="floors" type="number" min="1" max="200" value="1"></div>
+<div class="field"><label for="bedrooms">Bedrooms requested</label><input id="bedrooms" type="number" min="1" max="20" value="1"></div>
+<div class="field"><label for="seed">Generation seed</label><input id="seed" type="number" min="0" value="42"></div>
+<div class="field"><label for="profile">Design variations</label><select id="profile"><option value="all">Generate all current profiles</option><option value="best">Best available</option><option value="balanced">Balanced conventional</option><option value="open">Open living</option><option value="privacy">Privacy first</option></select></div>
+</div>
+<div class="note"><b>Current engine boundary:</b> the residential solver still generates one bedroom and five spaces. Other room schedules are not silently approximated; unsupported requests return a clear diagnostic.</div>
+<button id="generate" type="submit">Generate floor-plan candidates</button>
+<button id="reset" class="secondary" type="button">Reset example brief</button>
+<div class="hint">Generation runs locally on this computer. Brief data is sent only to the local server at 127.0.0.1.</div>
+</form></section>
+<section class="workspace">
+<div class="panel"><div class="toolbar"><strong>Generated architectural candidates</strong><span id="status" class="status">Waiting for a generation request</span></div><div id="results" class="empty"><b>No plans generated yet</b>Adjust the building brief and run the native Mayhem generator. SVG previews will appear here.</div><div class="footer">Preview output is produced by mbf_build_house.exe. This is a development tool, not construction documentation or code-compliance certification.</div></div>
+<div class="panel"><h2>Current test coverage</h2><div class="results" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+<div><b>Input validation</b><div class="hint">Site dimensions, setbacks, floor count, bedroom count.</div></div><div><b>Native generation</b><div class="hint">C++ residential topology and geometry validation.</div></div><div><b>Profile comparison</b><div class="hint">Balanced, open-living and privacy-first candidate profiles.</div></div><div><b>Diagnostics</b><div class="hint">Build failures and unsupported requirements are surfaced.</div></div>
+</div></div>
+</section></main>
+<script>
+const $=id=>document.getElementById(id);
+const fields=["width","depth","south","north","east","west","floors","bedrooms","seed","profile"];
+const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,floors:1,bedrooms:1,seed:42,profile:"all"};
+$("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k]});
+$("brief").addEventListener("submit",async e=>{
+ e.preventDefault();const button=$("generate");button.disabled=true;$("status").textContent="Generating with native C++ engine…";
+ $("results").className="empty";$("results").textContent="Running geometry generation and validation…";
+ const brief={};for(const k of fields){brief[k]=$(k).type==="number"?Number($(k).value):$(k).value}
+ try{
+  const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(brief)});
+  const payload=await response.json();const host=$("results");host.className="results";host.innerHTML="";
+  if(!payload.candidates||payload.candidates.length===0){host.className="empty";const b=document.createElement("b");b.textContent="No valid candidate returned";host.append(b,document.createTextNode(payload.error||"The current planner could not satisfy this brief."));$("status").textContent="Generation failed";return}
+  let success=0;
+  for(const candidate of payload.candidates){
+   const card=document.createElement("article");card.className="result";
+   const head=document.createElement("div");head.className="result-head";const name=document.createElement("b");name.textContent=candidate.profile;const tag=document.createElement("span");tag.textContent=candidate.ok?"VALIDATED BY CURRENT CHECKS":"NOT GENERATED";head.append(name,tag);card.append(head);
+   if(candidate.svg){const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Generated floor plan "+candidate.profile;img.src=URL.createObjectURL(new Blob([candidate.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);success++}
+   const detail=document.createElement("div");detail.className="details";detail.textContent=candidate.stdout||candidate.error||"";card.append(detail);host.append(card);
+  }
+  $("status").textContent=success+" candidate(s) generated";
+ }catch(err){$("results").className="empty";$("results").textContent="Could not contact local generation service: "+err.message;$("status").textContent="Local service unavailable"}
+ finally{button.disabled=false}
+});
+</script></body></html>
