@@ -325,6 +325,24 @@ void topology_to_geometry_solver(){
        quality.privacy_score>=0.0&&quality.privacy_score<=100.0&&
        quality.overall_score>=0.0&&quality.overall_score<=100.0,
        "spatial quality scores remain within normalized bounds");
+   const auto geometry=build_geometry_2d(plan);
+   req(geometry.valid,"topology plan converts to canonical 2D geometry");
+   auto wall_topology=build_wall_topology(geometry.geometry);
+   req(wall_topology.valid&&!wall_topology.walls.empty(),"wall topology is built from room boundaries");
+   OpeningSettings2D opening_settings;
+   const auto openings=generate_default_openings(wall_topology,plan.entrance,opening_settings);
+   req(!openings.empty(),"default doors and windows are generated");
+   std::vector<RoomId> room_ids;
+   for(const auto& room:plan.rooms)room_ids.push_back(room.id);
+   const auto access=build_circulation_graph(wall_topology,room_ids,0.8);
+   req(access.valid&&access.reachable_room_ids.size()==room_ids.size(),
+       "door openings provide a connected route from the exterior entrance to every room");
+   const auto wall_svg=std::filesystem::temp_directory_path()/"mayhem_wall_openings_test.svg";
+   std::string wall_error;
+   req(export_wall_topology_svg(geometry.geometry,wall_topology,wall_svg.string(),&wall_error),
+       "architectural SVG exports wall and opening overlays");
+   req(std::filesystem::file_size(wall_svg)>100U,"wall and opening SVG is not empty");
+   std::filesystem::remove(wall_svg);
    selected=std::move(plan);solved=true;break;
   } catch(const std::runtime_error&) {
    // Some graph candidates may not fit the current rectangular slicing solver.
