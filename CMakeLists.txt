@@ -51,10 +51,14 @@ if(MBF_BUILD_EXAMPLES)
                     --output ${CMAKE_CURRENT_BINARY_DIR}/topology_smoke.svg)
         add_test(NAME mbf_topology_house_smoke
             COMMAND mbf_generate_topology_house --width 18 --depth 12
-                    --bedrooms 2 --bathrooms 2 --output-prefix ${CMAKE_CURRENT_BINARY_DIR}/topology_house_smoke)
+                    --bedrooms 2 --bathrooms 2 --living-area 28 --kitchen-area 14\n                    --bedroom-area 16 --bathroom-area 7 --hallway-area 9\n                    --output-prefix ${CMAKE_CURRENT_BINARY_DIR}/topology_house_smoke)
         add_test(NAME mbf_topology_house_rejects_unimplemented_multifloor
             COMMAND mbf_generate_topology_house --floors 2)
         set_tests_properties(mbf_topology_house_rejects_unimplemented_multifloor
+            PROPERTIES WILL_FAIL TRUE)
+        add_test(NAME mbf_topology_house_rejects_invalid_target_area
+            COMMAND mbf_generate_topology_house --bathroom-area 3.0)
+        set_tests_properties(mbf_topology_house_rejects_invalid_target_area
             PROPERTIES WILL_FAIL TRUE)
     endif()
 endif()
