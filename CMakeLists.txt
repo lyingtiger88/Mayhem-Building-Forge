@@ -42,4 +42,9 @@ if(MBF_BUILD_EXAMPLES)
     target_link_libraries(mbf_build_house PRIVATE MBF::Core)
     add_executable(mbf_topology_preview examples/mbf_topology_preview.cpp)
     target_link_libraries(mbf_topology_preview PRIVATE MBF::Core)
+    if(MBF_BUILD_TESTS)
+        add_test(NAME mbf_topology_preview_smoke
+            COMMAND mbf_topology_preview --bedrooms 2
+                    --output ${CMAKE_CURRENT_BINARY_DIR}/topology_smoke.svg)
+    endif()
 endif()
