@@ -5,6 +5,7 @@
 #include "mbf/polygon_region.hpp"
 #include "mbf/polygon_offset.hpp"
 #include "mbf/residential_layout.hpp"
+#include "mbf/multi_floor.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -241,6 +242,63 @@ void robust_polygon_geometry(){
   req(std::abs(polygon_intersection_area(a,b)-expected)<1e-7,
       "polygon intersection agrees with analytical rectangle overlap");
  }
+}
+
+void multi_floor_building(){
+ using namespace mbf;
+ ResidentialLayoutSettings settings;settings.width_m=12;settings.depth_m=9;
+ const auto typical=generate_balanced_residential_layout(settings);
+ auto building=generate_stacked_building(typical,20,3.2,0.22);
+ const auto valid=validate_multi_floor_building(building);
+ req(valid.valid,"twenty-floor stack validates");
+ req(building.floors.size()==20U,"requested floor count is generated");
+ req(std::abs(building.floors[19].elevation_m-60.8)<1e-8,
+     "floor elevations follow floor-to-floor height");
+ req(std::abs(valid.total_height_m-64.0)<1e-8,
+     "total building height is calculated");
+ req(building.floors[0].layout.rooms.size()==typical.rooms.size(),
+     "each floor retains the canonical 2D room model");
+
+ VerticalCore2D stair;
+ stair.id=100;stair.name="Main Stair";stair.kind=VerticalCoreKind::Stair;
+ stair.footprint=make_rectangle(0.5,5.7,1.0,1.0);
+ stair.room_ids_by_floor.assign(building.floors.size(),2U);
+ VerticalCore2D elevator;
+ elevator.id=101;elevator.name="Elevator";elevator.kind=VerticalCoreKind::Elevator;
+ elevator.footprint=make_rectangle(2.0,5.7,1.0,1.0);
+ elevator.room_ids_by_floor.assign(building.floors.size(),2U);
+ building.vertical_cores={stair,elevator};
+ req(validate_multi_floor_building(building).valid,
+     "stair and elevator cores remain continuous and aligned across all floors");
+
+ auto missing_core_room=building;
+ missing_core_room.vertical_cores[0].room_ids_by_floor[7]=999U;
+ req(!validate_multi_floor_building(missing_core_room).valid,
+     "missing room mapping breaks vertical core continuity");
+
+ auto misaligned=building;
+ misaligned.floors[8].elevation_m+=0.15;
+ req(!validate_multi_floor_building(misaligned).valid,
+     "misaligned floor elevation is rejected");
+
+ auto wrong_plate=building;
+ wrong_plate.floors[4].layout.width_m+=0.5;
+ req(!validate_multi_floor_building(wrong_plate).valid,
+     "misaligned floor plate dimensions are rejected");
+
+ auto thick_slab=building;
+ thick_slab.floors[2].slab_thickness_m=0.8;
+ req(!validate_multi_floor_building(thick_slab).valid,
+     "excessive slab thickness is rejected");
+
+ auto overlapping_cores=building;
+ overlapping_cores.vertical_cores[1].footprint=make_rectangle(0.8,5.8,1.0,0.8);
+ req(!validate_multi_floor_building(overlapping_cores).valid,
+     "overlapping stair and elevator core footprints are rejected");
+
+ bool zero_floors_threw=false;
+ try{(void)generate_stacked_building(typical,0);}catch(const std::invalid_argument&){zero_floors_threw=true;}
+ req(zero_floors_threw,"zero-floor building generation is rejected");
 }
 void residential_layout(){
  using namespace mbf;
@@ -541,4 +599,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
