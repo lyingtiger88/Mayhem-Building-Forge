@@ -16,6 +16,13 @@ class ParametricLabInputTests(unittest.TestCase):
             "seed": 42, "bathrooms": 1, "profile": "all",
         }
 
+    def test_gui_loads_external_application_script(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / "gui" / "index.html").read_text(encoding="utf-8")
+        script = root / "gui" / "app.js"
+        self.assertTrue(script.is_file())
+        self.assertIn('<script src="/app.js" defer></script>', html)
+
     def test_valid_brief_and_all_profiles(self):
         values, profile = SERVER.parse_brief(self.brief)
         self.assertEqual(profile, "all")
