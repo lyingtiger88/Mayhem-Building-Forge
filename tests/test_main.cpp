@@ -6,6 +6,7 @@
 #include "mbf/polygon_offset.hpp"
 #include "mbf/residential_layout.hpp"
 #include "mbf/multi_floor.hpp"
+#include "mbf/building_brief.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -244,6 +245,62 @@ void robust_polygon_geometry(){
  }
 }
 
+
+void building_brief_contract(){
+ using namespace mbf;
+ auto brief=make_default_residential_brief();
+ const auto valid=validate_building_brief(brief);
+ req(valid.valid,"default parametric building brief validates");
+ req(std::abs(valid.buildable_width_m-12.0)<1e-9&&
+     std::abs(valid.buildable_depth_m-9.0)<1e-9,
+     "brief reports buildable dimensions");
+ req(std::abs(valid.requested_minimum_room_area_m2-42.5)<1e-9,
+     "brief aggregates minimum room areas");
+ req(check_current_planner_compatibility(brief).supported,
+     "default brief matches current residential planner capability");
+
+ auto setbacks=brief;
+ setbacks.site_width_m=20.0;setbacks.site_depth_m=15.0;
+ setbacks.setback_west_m=2.0;setbacks.setback_east_m=1.0;
+ setbacks.setback_south_m=3.0;setbacks.setback_north_m=2.0;
+ const auto setback_result=validate_building_brief(setbacks);
+ req(setback_result.valid,"reasonable site setbacks validate");
+ req(std::abs(setback_result.buildable_width_m-17.0)<1e-9&&
+     std::abs(setback_result.buildable_depth_m-10.0)<1e-9,
+     "site setbacks are subtracted from buildable dimensions");
+ req(!check_current_planner_compatibility(setbacks).supported,
+     "current planner reports unsupported non-south entrance or footprint mismatch rather than silently ignoring it");
+
+ auto too_many=brief;
+ too_many.rooms[2].count=2;
+ req(validate_building_brief(too_many).valid,
+     "multi-bedroom schedule is a valid brief independent of current solver support");
+ req(!check_current_planner_compatibility(too_many).supported,
+     "current solver explicitly reports multi-bedroom schedule as unsupported");
+
+ auto impossible=brief;
+ impossible.rooms[0].minimum_area_m2=200.0;
+ req(!validate_building_brief(impossible).valid,
+     "minimum room area exceeding buildable floor area is rejected");
+
+ auto consumed=brief;
+ consumed.setback_west_m=6.0;consumed.setback_east_m=6.0;
+ req(!validate_building_brief(consumed).valid,
+     "setbacks consuming the whole site are rejected");
+
+ auto bad_adjacency=brief;
+ bad_adjacency.adjacency.push_back({RoomRole::Living,RoomRole::Bathroom,
+     AdjacencyStrength::Required,1.0});
+ req(validate_building_brief(bad_adjacency).valid,
+     "valid but currently unsupported adjacency remains a valid user brief");
+ req(!check_current_planner_compatibility(bad_adjacency).supported,
+     "unsupported required adjacency is reported as planner limitation");
+
+ auto invalid_role=brief;
+ invalid_role.rooms[0].role=RoomRole::Auto;
+ req(!validate_building_brief(invalid_role).valid,
+     "unresolved automatic room role is rejected in explicit brief");
+}
 void multi_floor_building(){
  using namespace mbf;
  ResidentialLayoutSettings settings;settings.width_m=12;settings.depth_m=9;
@@ -599,4 +656,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
