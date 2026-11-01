@@ -1,5 +1,5 @@
-#include "mbf/multi_floor.hpp"
 #include "mbf/building_brief.hpp"
+#include "mbf/multi_floor.hpp"
 #include "mbf/residential_layout.hpp"
 #include <cstdlib>
 #include <iomanip>
@@ -12,15 +12,20 @@ void usage() {
     std::cout
       << "Mayhem Building Forge - Parametric House Generator (prototype)\n"
       << "Usage: mbf_build_house [options]\n"
-      << "  --width METRES       Building width (default 12)\n"
-      << "  --depth METRES       Building depth (default 9)\n"
+      << "  --width METRES       Site width (default 12)\n"
+      << "  --depth METRES       Site depth (default 9)\n"
+      << "  --setback-south M    South setback (default 0)\n"
+      << "  --setback-north M    North setback (default 0)\n"
+      << "  --setback-east M     East setback (default 0)\n"
+      << "  --setback-west M     West setback (default 0)\n"
+      << "  --bedrooms COUNT     Requested bedrooms (current solver supports 1)\n"
       << "  --floors COUNT       Number of repeated floors (default 1)\n"
       << "  --height METRES      Floor-to-floor height (default 3.2)\n"
       << "  --profile NAME       best | balanced | open | privacy (default best)\n"
       << "  --seed INTEGER       Reproducible generation seed (default 1)\n"
       << "  --output FILE.svg    Output floor-plan SVG (default mayhem_house.svg)\n"
       << "  --help               Show this help\n"
-      << "\nCurrent prototype: five-room, two-bedroom residential typology.\n";
+      << "\nCurrent prototype: five spaces, including one bedroom.\n";
 }
 double number(const std::string& value,const char* option) {
     std::size_t used=0;
@@ -40,8 +45,9 @@ int main(int argc,char** argv) {
     using namespace mbf;
     try {
         ResidentialLayoutSettings settings;
-        std::uint32_t floors=1;
+        std::uint32_t floors=1,bedrooms=1;
         double floor_height=3.2;
+        double south=0.0,north=0.0,east=0.0,west=0.0;
         std::string profile="best",output="mayhem_house.svg";
         for(int i=1;i<argc;++i) {
             const std::string arg=argv[i];
@@ -54,7 +60,15 @@ int main(int argc,char** argv) {
                 const auto n=integer(value,"--floors");
                 if(n==0||n>200)throw std::invalid_argument("--floors must be between 1 and 200");
                 floors=static_cast<std::uint32_t>(n);
-            } else if(arg=="--height")floor_height=number(value,"--height");\n            else if(arg=="--bedrooms") { const auto n=integer(value,"--bedrooms"); if(n==0||n>20)throw std::invalid_argument("--bedrooms must be between 1 and 20"); bedrooms=static_cast<std::uint32_t>(n); }\n            else if(arg=="--setback-south")setback_south=number(value,"--setback-south");\n            else if(arg=="--setback-north")setback_north=number(value,"--setback-north");\n            else if(arg=="--setback-east")setback_east=number(value,"--setback-east");\n            else if(arg=="--setback-west")setback_west=number(value,"--setback-west");
+            } else if(arg=="--bedrooms") {
+                const auto n=integer(value,"--bedrooms");
+                if(n==0||n>20)throw std::invalid_argument("--bedrooms must be between 1 and 20");
+                bedrooms=static_cast<std::uint32_t>(n);
+            } else if(arg=="--height")floor_height=number(value,"--height");
+            else if(arg=="--setback-south")south=number(value,"--setback-south");
+            else if(arg=="--setback-north")north=number(value,"--setback-north");
+            else if(arg=="--setback-east")east=number(value,"--setback-east");
+            else if(arg=="--setback-west")west=number(value,"--setback-west");
             else if(arg=="--profile")profile=value;
             else if(arg=="--seed")settings.seed=integer(value,"--seed");
             else if(arg=="--output")output=value;
@@ -62,21 +76,27 @@ int main(int argc,char** argv) {
         }
 
         auto brief=make_default_residential_brief();
-        brief.site_width_m=settings.width_m;brief.site_depth_m=settings.depth_m;
-        brief.floor_count=floors;brief.floor_to_floor_height_m=floor_height;brief.seed=settings.seed;
-        brief.setback_south_m=setback_south;brief.setback_north_m=setback_north;
-        brief.setback_east_m=setback_east;brief.setback_west_m=setback_west;
+        brief.site_width_m=settings.width_m;
+        brief.site_depth_m=settings.depth_m;
+        brief.floor_count=floors;
+        brief.floor_to_floor_height_m=floor_height;
+        brief.seed=settings.seed;
+        brief.setback_south_m=south;
+        brief.setback_north_m=north;
+        brief.setback_east_m=east;
+        brief.setback_west_m=west;
         brief.rooms[2].count=bedrooms;
+
         const auto brief_validation=validate_building_brief(brief);
         if(!brief_validation.valid) {
-            std::cerr<<"Building brief is invalid:\\n";
-            for(const auto& error:brief_validation.errors)std::cerr<<" - "<<error<<'\\n';
+            std::cerr<<"Building brief is invalid:\n";
+            for(const auto& error:brief_validation.errors)std::cerr<<" - "<<error<<'\n';
             return EXIT_FAILURE;
         }
         const auto compatibility=check_current_planner_compatibility(brief);
         if(!compatibility.supported) {
-            std::cerr<<"Brief is valid, but the current planner cannot yet satisfy it:\\n";
-            for(const auto& limitation:compatibility.limitations)std::cerr<<" - "<<limitation<<'\\n';
+            std::cerr<<"Brief is valid, but the current planner cannot yet satisfy it:\n";
+            for(const auto& limitation:compatibility.limitations)std::cerr<<" - "<<limitation<<'\n';
             return EXIT_FAILURE;
         }
         settings.width_m=brief_validation.buildable_width_m;
@@ -119,14 +139,16 @@ int main(int argc,char** argv) {
         std::cout<<std::fixed<<std::setprecision(2);
         std::cout<<"\nMAYHEM BUILDING FORGE - GENERATION COMPLETE\n";
         std::cout<<"Selected profile: "<<residential_profile_name(selected->profile)<<'\n';
-        std::cout<<"Footprint: "<<settings.width_m<<" m x "<<settings.depth_m<<" m\n";
+        std::cout<<"Site: "<<brief.site_width_m<<" m x "<<brief.site_depth_m<<" m\n";
+        std::cout<<"Buildable footprint: "<<settings.width_m<<" m x "<<settings.depth_m<<" m\n";
         std::cout<<"Floors: "<<floors<<" | Total height: "<<building_check.total_height_m<<" m\n";
+        std::cout<<"Bedrooms requested: "<<bedrooms<<'\n';
         std::cout<<"Rooms per floor: "<<selected->layout.rooms.size()<<'\n';
         for(const auto& room:selected->layout.rooms)
             std::cout<<"  "<<room.name<<": "<<room.area_m2<<" m2\n";
         std::cout<<"Candidate score: "<<selected->validation.quality_score<<'\n';
         std::cout<<"SVG floor plan: "<<output<<'\n';
-        std::cout<<"NOTE: current prototype repeats one validated two-bedroom plan on every floor.\n";
+        std::cout<<"NOTE: all floors currently repeat the same one-bedroom plan.\n";
         return EXIT_SUCCESS;
     } catch(const std::exception& e) {
         std::cerr<<"Generation error: "<<e.what()<<'\n';
