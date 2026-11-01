@@ -37,6 +37,16 @@ class ParametricLabInputTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             SERVER.parse_brief(brief)
 
+    def test_rejects_unsupported_bathroom_count(self):
+        brief = dict(self.brief, bathrooms=5)
+        with self.assertRaises(ValueError):
+            SERVER.parse_brief(brief)
+
+    def test_rejects_boolean_bathroom_count(self):
+        brief = dict(self.brief, bathrooms=True)
+        with self.assertRaises(ValueError):
+            SERVER.parse_brief(brief)
+
     def test_rejects_unknown_profile(self):
         brief = dict(self.brief, profile="random")
         with self.assertRaises(ValueError):
