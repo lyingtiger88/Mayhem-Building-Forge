@@ -294,6 +294,27 @@ void room_topology_generation(){
  const auto impossible_candidates=generate_room_topology_candidates(impossible);
  req(impossible_candidates.empty(),"conflicting required and avoided adjacency rules produce no invalid candidates");
 }
+void topology_to_geometry_solver(){
+ using namespace mbf;
+ auto brief=make_default_residential_brief();
+ brief.site_width_m=18.0;brief.site_depth_m=12.0;
+ const auto topologies=generate_room_topology_candidates(brief);
+ GenerationSettings settings{18.0,12.0,48,brief.seed};
+ FloorPlan selected;
+ bool solved=false;
+ FloorPlanGenerator generator;
+ for(const auto& topology:topologies) {
+  try {
+   auto plan=generator.generate_topology_layout(settings,brief,topology);
+   req(validate_floor_plan(plan).valid,"topology-derived geometric plan passes floor-plan validation");
+   req(plan.rooms.size()==topology.nodes.size(),"geometric solver preserves all topology room nodes");
+   selected=std::move(plan);solved=true;break;
+  } catch(const std::runtime_error&) {
+   // Some graph candidates may not fit the current rectangular slicing solver.
+  }
+ }
+ req(solved,"at least one generated room topology is realized as a valid floor plan");
+}
 void building_brief_contract(){
  using namespace mbf;
  auto brief=make_default_residential_brief();
@@ -724,4 +745,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();room_topology_generation();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();room_topology_generation();topology_to_geometry_solver();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
