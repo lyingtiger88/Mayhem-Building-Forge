@@ -24,6 +24,8 @@ class ParametricLabInputTests(unittest.TestCase):
         script = root / "gui" / "app.js"
         self.assertTrue(script.is_file())
         self.assertIn('<script src="/app.js" defer></script>', html)
+        self.assertIn('<link rel="stylesheet" href="/studio.css">', html)
+        self.assertTrue((root / "gui" / "studio.css").is_file())
 
     def test_valid_brief_and_all_profiles(self):
         values, profile = SERVER.parse_brief(self.brief)
