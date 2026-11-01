@@ -221,6 +221,103 @@ FloorPlan FloorPlanGenerator::generate_treemap(const GenerationSettings& s,
     return best;
 }
 
+FloorPlan FloorPlanGenerator::generate_topology_layout(
+        const GenerationSettings& requested_settings,const BuildingBrief& brief,
+        const RoomTopology& topology) const {
+    const auto brief_validation=validate_building_brief(brief);
+    if(!brief_validation.valid)
+        throw std::invalid_argument("Cannot solve an invalid Building Brief.");
+    std::vector<std::string> topology_diagnostics;
+    if(!validate_room_topology(topology,brief,&topology_diagnostics))
+        throw std::invalid_argument("Room topology is invalid or incompatible with the brief.");
+
+    GenerationSettings settings=requested_settings;
+    if(std::abs(settings.width_m-brief_validation.buildable_width_m)>1e-6||
+       std::abs(settings.depth_m-brief_validation.buildable_depth_m)>1e-6)
+        throw std::invalid_argument("Geometric solver footprint must match the Building Brief buildable dimensions.");
+
+    std::vector<RoomRequirement> expanded_requirements;
+    for(const auto& requirement:brief.rooms)
+        for(std::uint32_t instance=0;instance<requirement.count;++instance)
+            expanded_requirements.push_back(requirement);
+    if(expanded_requirements.size()!=topology.nodes.size())
+        throw std::invalid_argument("Topology node count does not match the expanded room schedule.");
+
+    std::vector<RoomSpec> rooms;
+    std::vector<RoomRole> roles;
+    rooms.reserve(topology.nodes.size());roles.reserve(topology.nodes.size());
+    for(std::size_t i=0;i<topology.nodes.size();++i) {
+        const auto& node=topology.nodes[i];
+        if(node.id!=static_cast<RoomId>(i)||node.role!=expanded_requirements[i].role)
+            throw std::invalid_argument("Topology node IDs/roles do not match the expanded Building Brief order.");
+        rooms.push_back({node.name,expanded_requirements[i].target_area_m2,node.role});
+        roles.push_back(node.role);
+    }
+    check(settings,rooms);
+
+    const auto has_topology_edge=[&](RoomId a,RoomId b) {
+        const auto key=ordered_ids(a,b);
+        return std::any_of(topology.edges.begin(),topology.edges.end(),[&](const auto& edge){
+            return ordered_ids(edge.first,edge.second)==key;
+        });
+    };
+    FloorPlan best;
+    double best_score=-std::numeric_limits<double>::infinity();
+    const std::size_t n=rooms.size();
+    std::vector<std::size_t> order(n);
+    std::iota(order.begin(),order.end(),0U);
+    const auto consider=[&](const std::vector<std::size_t>& candidate_order,
+                            std::uint64_t mask) {
+        try {
+            auto candidate=make_rectangular_candidate(settings,rooms,candidate_order,mask);
+            candidate.algorithm=FloorPlanAlgorithm::ResidentialTopologyFirst;
+            for(const auto& edge:topology.edges)
+                if(shared_length(candidate.rooms[edge.first].bounds,
+                                 candidate.rooms[edge.second].bounds)<=1e-7)return;
+            for(std::size_t i=0;i<candidate.rooms.size();++i) {
+                const auto& requirement=expanded_requirements[i];
+                const auto& bounds=candidate.rooms[i].bounds;
+                if(candidate.rooms[i].actual_area_m2+1e-7<requirement.minimum_area_m2||
+                   bounds.width+1e-7<requirement.minimum_width_m||
+                   bounds.height+1e-7<requirement.minimum_depth_m)return;
+                for(std::size_t j=i+1;j<candidate.rooms.size();++j) {
+                    if(shared_length(bounds,candidate.rooms[j].bounds)<=1e-7)continue;
+                    if(is_avoided(brief,candidate.rooms[i].role,candidate.rooms[j].role))return;
+                }
+            }
+            double score=layout_score(candidate,roles)+topology.quality_score;
+            // Reward longer required interfaces while retaining compact room shapes.
+            for(const auto& edge:topology.edges) {
+                const double length=shared_length(candidate.rooms[edge.first].bounds,
+                                                  candidate.rooms[edge.second].bounds);
+                if(edge.required)score+=std::min(length,4.0)*0.35*edge.weight;
+            }
+            if(score>best_score+1e-10) {
+                best_score=score;
+                best=std::move(candidate);
+            }
+        } catch(const std::runtime_error&) {
+            // A degenerate guillotine cut is not a geometric candidate.
+        }
+    };
+
+    if(n<=7U) {
+        const std::uint64_t masks=1ULL<<(n-1U);
+        do {
+            for(std::uint64_t mask=0;mask<masks;++mask)consider(order,mask);
+        } while(std::next_permutation(order.begin(),order.end()));
+    } else {
+        std::mt19937_64 rng(settings.seed^topology.seed^0xD1B54A32D192ED03ULL);
+        for(std::size_t attempt=0;attempt<4096U;++attempt) {
+            std::shuffle(order.begin(),order.end(),rng);
+            consider(order,rng());
+        }
+    }
+    if(best.rooms.empty())
+        throw std::runtime_error("No rectangular geometric partition can realize this room topology and all minimum room dimensions. Try another topology, footprint, or room-area brief.");
+    return best;
+}
+
 FloorPlan FloorPlanGenerator::generate_residential_layout(
     const GenerationSettings& s, const std::vector<RoomSpec>& rs,
     EntranceSide entrance_side) const {
