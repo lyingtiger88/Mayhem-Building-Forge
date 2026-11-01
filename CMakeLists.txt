@@ -13,6 +13,7 @@ add_library(mbf_core
     core/src/residential_layout.cpp
     core/src/multi_floor.cpp
     core/src/building_brief.cpp
+    core/src/topology.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
 target_include_directories(mbf_core PUBLIC core/include)
