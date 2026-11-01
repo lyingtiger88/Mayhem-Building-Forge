@@ -20,6 +20,7 @@ NUMERIC_RANGES = {
     "floors": (1, 200), "bedrooms": (1, 4), "bathrooms": (1, 4), "seed": (0, 2**63 - 1),
 }
 PROFILES = ("balanced", "open", "privacy")
+ENTRANCE_SIDES = ("south", "north", "east", "west")
 
 
 def parse_brief(payload):
@@ -35,6 +36,10 @@ def parse_brief(payload):
         if key in ("floors", "bedrooms", "seed") and int(value) != value:
             raise ValueError(f"{key} must be an integer.")
         values[key] = int(value) if key in ("floors", "bedrooms", "seed") else float(value)
+    entrance = payload.get("entrance", "south")
+    if entrance not in ENTRANCE_SIDES:
+        raise ValueError("entrance must be south, north, east, or west.")
+    values["entrance"] = entrance
     profile = payload.get("profile", "all")
     if profile not in ("all", "best", *PROFILES):
         raise ValueError("profile must be all, best, balanced, open, or privacy.")
@@ -89,7 +94,7 @@ def generate_topology_plans(executable: Path, values):
             str(executable), "--width", str(values["width"]), "--depth", str(values["depth"]),
             "--setback-south", str(values["south"]), "--setback-north", str(values["north"]),
             "--setback-east", str(values["east"]), "--setback-west", str(values["west"]),
-            "--bedrooms", str(values["bedrooms"]), "--bathrooms", str(values["bathrooms"]), "--floors", str(values["floors"]), "--seed", str(values["seed"]),
+            "--bedrooms", str(values["bedrooms"]), "--bathrooms", str(values["bathrooms"]),\n            "--entrance-side", values["entrance"], "--floors", str(values["floors"]), "--seed", str(values["seed"]),
             "--output-prefix", str(prefix),
         ]
         completed = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
