@@ -17,7 +17,7 @@ NUMERIC_RANGES = {
     "width": (8.0, 100.0), "depth": (7.0, 100.0),
     "south": (0.0, 100.0), "north": (0.0, 100.0),
     "east": (0.0, 100.0), "west": (0.0, 100.0),
-    "floors": (1, 200), "bedrooms": (1, 20), "seed": (0, 2**63 - 1),
+    "floors": (1, 200), "bedrooms": (1, 4), "seed": (0, 2**63 - 1),
 }
 PROFILES = ("balanced", "open", "privacy")
 
