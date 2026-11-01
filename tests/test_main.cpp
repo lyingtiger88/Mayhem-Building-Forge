@@ -308,12 +308,33 @@ void topology_to_geometry_solver(){
    auto plan=generator.generate_topology_layout(settings,brief,topology);
    req(validate_floor_plan(plan).valid,"topology-derived geometric plan passes floor-plan validation");
    req(plan.rooms.size()==topology.nodes.size(),"geometric solver preserves all topology room nodes");
+   req(plan.entrance.defined&&plan.entrance.side==brief.entrance_side,
+       "topology-derived plan places an entrance on the requested facade");
+   req(plan.entrance.clear_width_m>=0.9&&plan.entrance.clear_width_m<=1.0,
+       "topology-derived entrance has a usable clear width");
+   req(plan.circulation_links.size()+1U>=plan.rooms.size(),
+       "topology-derived plan has connected room-to-room circulation links");
    selected=std::move(plan);solved=true;break;
   } catch(const std::runtime_error&) {
    // Some graph candidates may not fit the current rectangular slicing solver.
   }
  }
  req(solved,"at least one generated room topology is realized as a valid floor plan");
+ for(const auto side:{EntranceSide::North,EntranceSide::East,EntranceSide::West}) {
+  auto oriented=brief;oriented.entrance_side=side;
+  const auto graphs=generate_room_topology_candidates(oriented);
+  bool oriented_solved=false;
+  for(const auto& graph:graphs) {
+   try {
+    const auto plan=generator.generate_topology_layout(settings,oriented,graph);
+    req(validate_floor_plan(plan).valid,"oriented topology floor plan validates");
+    req(plan.entrance.defined&&plan.entrance.side==side,
+        "entrance respects each requested exterior facade");
+    oriented_solved=true;break;
+   } catch(const std::runtime_error&) {}
+  }
+  req(oriented_solved,"a topology candidate can be generated for each exterior entrance side");
+ }
 }
 void building_brief_contract(){
  using namespace mbf;
