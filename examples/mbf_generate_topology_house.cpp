@@ -12,6 +12,27 @@
 #include <sstream>
 #include <string>
 
+namespace {
+double parse_real(const std::string& value,const std::string& option) {
+    std::size_t used=0;
+    const double parsed=std::stod(value,&used);
+    if(used!=value.size())throw std::invalid_argument("Invalid numeric value for "+option+".");
+    return parsed;
+}
+unsigned long parse_unsigned(const std::string& value,const std::string& option) {
+    std::size_t used=0;
+    const auto parsed=std::stoul(value,&used);
+    if(used!=value.size())throw std::invalid_argument("Invalid integer value for "+option+".");
+    return parsed;
+}
+std::uint64_t parse_seed(const std::string& value) {
+    std::size_t used=0;
+    const auto parsed=std::stoull(value,&used);
+    if(used!=value.size())throw std::invalid_argument("Invalid integer value for --seed.");
+    return parsed;
+}
+}
+
 int main(int argc,char** argv) {
     using namespace mbf;
     try {
@@ -32,14 +53,14 @@ int main(int argc,char** argv) {
             }
             if(i+1>=argc)throw std::invalid_argument("Missing value after "+arg);
             const std::string value=argv[++i];
-            if(arg=="--width")width=std::stod(value);
+            if(arg=="--width")width=parse_real(value,arg);
             else if(arg=="--depth")depth=std::stod(value);
             else if(arg=="--setback-south")south=std::stod(value);
             else if(arg=="--setback-north")north=std::stod(value);
             else if(arg=="--setback-east")east=std::stod(value);
             else if(arg=="--setback-west")west=std::stod(value);
             else if(arg=="--bedrooms") {
-                const auto n=std::stoul(value);
+                const auto n=parse_unsigned(value,arg);
                 if(n<1U||n>4U)throw std::invalid_argument("--bedrooms must be between 1 and 4.");
                 bedrooms=static_cast<std::uint32_t>(n);
             } else if(arg=="--bathrooms") {
@@ -61,7 +82,7 @@ int main(int argc,char** argv) {
                 const auto n=std::stoul(value);
                 if(n!=1U)throw std::invalid_argument("The topology-driven geometric solver currently supports one floor. Multi-floor generation is not yet integrated.");
                 floors=static_cast<std::uint32_t>(n);
-            } else if(arg=="--seed")seed=std::stoull(value);
+            } else if(arg=="--seed")seed=parse_seed(value);
             else if(arg=="--output-prefix")prefix=value;
             else throw std::invalid_argument("Unknown option: "+arg);
         }
