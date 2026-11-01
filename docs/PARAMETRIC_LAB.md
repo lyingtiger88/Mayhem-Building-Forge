@@ -56,6 +56,10 @@ When all profiles are requested, the local server invokes the native C++ executa
 
 The server binds to loopback only. It does not expose a network listener to the LAN or send project data to an external service.
 
+## Furniture layout and editing
+
+The topology-driven SVG preview now contains typed, individually identified furniture instances. The native core places furniture by room function and validates footprints against room polygons and other furniture clearances. In the Parametric Lab, enable furniture editing to select and drag objects, rotate the selected object in 90-degree increments, reset the generated layout, and export the edited SVG. These edits currently live in the exported SVG only; they are not yet persisted into the Building Brief or fed back into native project data. Door-swing, window-access, and continuous circulation-path validation remain pending.
+
 ## Current limitations
 
 - The legacy profile generator still generates a fixed five-space, one-bedroom typology; the experimental topology-driven solver supports a configurable 1–4 bedroom schedule.
@@ -65,7 +69,7 @@ The server binds to loopback only. It does not expose a network listener to the 
 - Doors and windows are placed heuristically; door swings, furniture clearances, and detailed accessibility checks are not yet modeled.
 - Daylight potential, privacy, and circulation scores are explainable heuristics, not full daylight simulation or building-code compliance.
 - The GUI is not yet a freeform visual room editor or 3D preview.
-- The SVG includes first-pass illustrative furniture symbols selected by room role; editable furniture objects, collision-aware placement, door-swing clearance, and Unreal integration are not yet provided.
+- Furniture placement is currently an initial deterministic 2D model; edits export to SVG but are not yet persisted into project data. Door-swing, window-access, circulation-path, and Unreal physics integration remain pending.
 
 The Lab is a development tool. Its output is not a construction drawing or proof of regulatory compliance.
 
