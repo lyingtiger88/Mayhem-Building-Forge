@@ -28,6 +28,7 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 <div class="field"><label for="seed">Generation seed</label><input id="seed" type="number" min="0" value="42"></div>
 <div class="field"><label for="profile">Design variations</label><select id="profile"><option value="all">Generate all current profiles</option><option value="balanced">Balanced conventional</option><option value="open">Open living</option><option value="privacy">Privacy first</option></select></div>
 </div>
+<div id="siteSummary" class="hint">Buildable footprint will be calculated from site dimensions and setbacks.</div>
 <div class="note"><b>Current engine boundary:</b> the topology-driven solver supports one floor and 1–4 bedrooms and 1–4 bathrooms with a rectangular footprint. Multi-floor requests and unsupported briefs are rejected with diagnostics. Legacy profile variants remain a separate fixed-layout prototype.</div>
 <button id="generate" type="submit">Generate floor-plan candidates</button>
 <button id="reset" class="secondary" type="button">Reset example brief</button>
