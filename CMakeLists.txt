@@ -6,6 +6,7 @@ add_library(mbf_core
     core/src/floor_plan.cpp
     core/src/generator.cpp
     core/src/geometry2d.cpp
+    core/src/furniture2d.cpp
     core/src/polygon.cpp
     core/src/polygon_intersection.cpp
     core/src/polygon_region.cpp
