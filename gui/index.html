@@ -30,6 +30,7 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 <div class="note"><b>Current engine boundary:</b> the topology-driven solver supports one floor and 1–4 bedrooms and 1–4 bathrooms with a rectangular footprint. Multi-floor requests and unsupported briefs are rejected with diagnostics. Legacy profile variants remain a separate fixed-layout prototype.</div>
 <button id="generate" type="submit">Generate floor-plan candidates</button>
 <button id="reset" class="secondary" type="button">Reset example brief</button>
+<div class="group"><button id="exportBrief" class="secondary" type="button">Export brief JSON</button><button id="importBrief" class="secondary" type="button">Import brief JSON</button><input id="briefFile" type="file" accept="application/json,.json" hidden></div>
 <div class="hint">Generation runs locally on this computer. Brief data is sent only to the local server at 127.0.0.1.</div>
 </form></section>
 <section class="workspace">
@@ -45,6 +46,21 @@ const $=id=>document.getElementById(id);
 const fields=["width","depth","south","north","east","west","floors","bedrooms","bathrooms","seed","profile"];
 const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
 $("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k]});
+$("exportBrief").addEventListener("click",()=>{
+ const brief={};for(const k of fields)brief[k]=$(k).type==="number"?Number($(k).value):$(k).value;
+ const blob=new Blob([JSON.stringify(brief,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="mayhem-building-brief.json";link.click();URL.revokeObjectURL(url);
+});
+$("importBrief").addEventListener("click",()=>$("briefFile").click());
+$("briefFile").addEventListener("change",async()=>{
+ const file=$("briefFile").files[0];if(!file)return;
+ try{const brief=JSON.parse(await file.text());for(const k of fields)if(brief[k]!==undefined)$(k).value=brief[k];$("status").textContent="Building brief imported";}catch(err){$("status").textContent="Invalid brief JSON: "+err.message;}
+ $("briefFile").value="";
+});
+function addSvgDownload(card,svg,filename){
+ const link=document.createElement("a");link.textContent="Download SVG";link.download=filename;link.href=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml"}));link.style.display="inline-block";link.style.margin="0 12px 12px";link.style.color="#9fc2ff";link.style.fontWeight="700";card.append(link);
+}
+
 $("brief").addEventListener("submit",async e=>{
  e.preventDefault();const button=$("generate");button.disabled=true;$("status").textContent="Generating with native C++ engine…";
  $("results").className="empty";$("results").textContent="Running geometry generation and validation…";
@@ -57,7 +73,7 @@ $("brief").addEventListener("submit",async e=>{
   for(const candidate of payload.candidates){
    const card=document.createElement("article");card.className="result";
    const head=document.createElement("div");head.className="result-head";const name=document.createElement("b");name.textContent=candidate.profile;const tag=document.createElement("span");tag.textContent=candidate.ok?"VALIDATED BY CURRENT CHECKS":"NOT GENERATED";head.append(name,tag);card.append(head);
-   if(candidate.svg){const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Generated floor plan "+candidate.profile;img.src=URL.createObjectURL(new Blob([candidate.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);success++}
+   if(candidate.svg){const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Generated floor plan "+candidate.profile;img.src=URL.createObjectURL(new Blob([candidate.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);addSvgDownload(card,candidate.svg,"mayhem-legacy-"+candidate.profile+".svg");success++}
    const detail=document.createElement("div");detail.className="details";detail.textContent=candidate.stdout||candidate.error||"";card.append(detail);host.append(card);
   }
   const topologyHost=$("topologyPreview");topologyHost.className="empty";topologyHost.innerHTML="";
@@ -73,7 +89,7 @@ $("brief").addEventListener("submit",async e=>{
    for(const plan of payload.topology_plans){
     const card=document.createElement("article");card.className="result";
     const head=document.createElement("div");head.className="result-head";const name=document.createElement("b");name.textContent=plan.profile;const tag=document.createElement("span");tag.textContent="TOPOLOGY SOLVED";head.append(name,tag);card.append(head);
-    const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Topology-derived floor plan "+plan.profile;img.src=URL.createObjectURL(new Blob([plan.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);
+    const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Topology-derived floor plan "+plan.profile;img.src=URL.createObjectURL(new Blob([plan.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);addSvgDownload(card,plan.svg,"mayhem-"+plan.profile.toLowerCase().replace(/[^a-z0-9]+/g,"-")+".svg");
     if(plan.quality&&Object.keys(plan.quality).length){const metrics=document.createElement("div");metrics.className="metrics";for(const [key,label] of [["daylight","Daylight potential"],["privacy","Privacy"],["circulation","Circulation"],["overall","Overall quality"],["doors","Doors"],["windows","Windows"],["openings","Openings"],["open-plan","Open-plan links"],["accessible","Rooms accessible"]]){if(plan.quality[key]===undefined)continue;const item=document.createElement("div");item.className="metric";const caption=document.createElement("small");caption.textContent=label;const value=document.createElement("b");value.textContent=typeof plan.quality[key]==="number"?(key==="doors"||key==="windows"||key==="openings"?String(Math.round(plan.quality[key])):Math.round(plan.quality[key])+"/100"):String(plan.quality[key]);item.append(caption,value);metrics.append(item)}card.append(metrics)}
     plansHost.append(card);
    }
