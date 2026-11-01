@@ -36,3 +36,25 @@ button:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px)}
 .preview svg{width:100%;height:auto;max-height:560px;touch-action:none}
 .preview svg [data-furniture-id]{transition:filter .12s}
 @media(max-width:700px){.furniture-toolbar small{width:100%;margin-left:0}}
+
+/* Furniture editor: larger canvas, stable pointer interaction, and expanded workspace. */
+.furniture-editor-card{min-width:0}
+.furniture-editor-card .preview{padding:10px;min-height:420px;overflow:auto;background:#e9edf2}
+.furniture-editor-card .preview svg{display:block;width:100%;height:auto;max-height:none;min-height:420px;touch-action:none;user-select:none}
+.furniture-toolbar{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px 12px;background:#192331;border-bottom:1px solid #344252}
+.furniture-toolbar button{font-size:11px;padding:9px 11px;white-space:nowrap}
+.furniture-toolbar .zoom-label{min-width:44px;text-align:center;color:#e8eef9;font-variant-numeric:tabular-nums}
+.furniture-toolbar small{color:#c4cfdb;margin-left:auto;line-height:1.5}
+.furniture-editor-card.furniture-editor-fullscreen{position:fixed!important;inset:12px!important;z-index:9999!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#101722!important;border:1px solid #667789!important;border-radius:12px!important;box-shadow:0 20px 90px rgba(0,0,0,.65)!important;transform:none!important}
+.furniture-editor-fullscreen .result-head{flex:0 0 auto}
+.furniture-editor-fullscreen .furniture-toolbar{flex:0 0 auto}
+.furniture-editor-fullscreen .furniture-toolbar small{margin-left:auto}
+.furniture-editor-fullscreen .preview{flex:1 1 auto;min-height:0!important;overflow:auto!important;display:flex;align-items:center;justify-content:center;padding:16px}
+.furniture-editor-fullscreen .preview svg{width:100%;height:100%;max-height:none;min-height:0;object-fit:contain}
+body.furniture-editor-open{overflow:hidden}
+@media(max-width:900px){
+ .furniture-editor-card .preview{min-height:340px}
+ .furniture-editor-card .preview svg{min-height:340px}
+ .furniture-editor-fullscreen{inset:5px!important}
+ .furniture-toolbar small{width:100%;margin-left:0}
+}
