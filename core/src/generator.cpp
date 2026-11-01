@@ -1,5 +1,6 @@
 #include "mbf/generator.hpp"
 #include "mbf/floor_plan.hpp"
+#include "mbf/spatial_quality.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cctype>
@@ -366,7 +367,10 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
                     brief.entrance_side==EntranceSide::West?0.0:settings.width_m;
             }
 
-            double score=layout_score(candidate,roles)+topology.quality_score;
+            const auto spatial=evaluate_spatial_quality(candidate,brief);
+            if(!spatial.valid||!spatial.circulation_connected)return;
+            double score=layout_score(candidate,roles)+topology.quality_score+
+                         0.25*spatial.overall_score;
             if(candidate.entrance.room_id<candidate.rooms.size()) {
                 const auto role=candidate.rooms[candidate.entrance.room_id].role;
                 if(role==RoomRole::Hallway||role==RoomRole::Circulation)score+=18.0;
