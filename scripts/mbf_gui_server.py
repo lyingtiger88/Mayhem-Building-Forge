@@ -94,7 +94,8 @@ def generate_topology_plans(executable: Path, values):
             str(executable), "--width", str(values["width"]), "--depth", str(values["depth"]),
             "--setback-south", str(values["south"]), "--setback-north", str(values["north"]),
             "--setback-east", str(values["east"]), "--setback-west", str(values["west"]),
-            "--bedrooms", str(values["bedrooms"]), "--bathrooms", str(values["bathrooms"]),\n            "--entrance-side", values["entrance"], "--floors", str(values["floors"]), "--seed", str(values["seed"]),
+            "--bedrooms", str(values["bedrooms"]), "--bathrooms", str(values["bathrooms"]),
+            "--entrance-side", values["entrance"], "--floors", str(values["floors"]), "--seed", str(values["seed"]),
             "--output-prefix", str(prefix),
         ]
         completed = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
