@@ -34,6 +34,7 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 <section class="workspace">
 <div class="panel"><div class="toolbar"><strong>Generated architectural candidates</strong><span id="status" class="status">Waiting for a generation request</span></div><div id="results" class="empty"><b>No plans generated yet</b>Adjust the building brief and run the native Mayhem generator. SVG previews will appear here.</div><div class="footer">Preview output is produced by mbf_build_house.exe. This is a development tool, not construction documentation or code-compliance certification.</div></div>
 <div class="panel"><h2>Room topology graphs</h2><div id="topologyPreview" class="empty"><b>No topology graphs yet</b>Generate a brief to inspect the distinct room-adjacency strategies. These diagrams show relationships, not room geometry.</div></div>
+<div class="panel"><h2>Topology-driven floor-plan candidates <span class="pill">EXPERIMENTAL</span></h2><div id="topologyPlans" class="empty"><b>No topology-driven plans yet</b>The geometric solver will try to realize each generated room graph as a floor-plan candidate.</div></div>
 <div class="panel"><h2>Current test coverage</h2><div class="results" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
 <div><b>Input validation</b><div class="hint">Site dimensions, setbacks, floor count, bedroom count.</div></div><div><b>Native generation</b><div class="hint">C++ residential topology and geometry validation.</div></div><div><b>Profile comparison</b><div class="hint">Balanced, open-living and privacy-first candidate profiles.</div></div><div><b>Diagnostics</b><div class="hint">Build failures and unsupported requirements are surfaced.</div></div>
 </div></div>
@@ -65,6 +66,16 @@ $("brief").addEventListener("submit",async e=>{
    graphImage.src=URL.createObjectURL(new Blob([payload.topology_svg],{type:"image/svg+xml"}));topologyHost.append(graphImage);
    const caption=document.createElement("div");caption.className="details";caption.textContent=payload.topology_report||"Topology graph candidates generated.";topologyHost.append(caption);
   }else{topologyHost.textContent=payload.topology_error||"Topology graph preview unavailable."}
+  const plansHost=$("topologyPlans");plansHost.className="empty";plansHost.innerHTML="";
+  if(payload.topology_plans&&payload.topology_plans.length){
+   plansHost.className="results";
+   for(const plan of payload.topology_plans){
+    const card=document.createElement("article");card.className="result";
+    const head=document.createElement("div");head.className="result-head";const name=document.createElement("b");name.textContent=plan.profile;const tag=document.createElement("span");tag.textContent="TOPOLOGY SOLVED";head.append(name,tag);card.append(head);
+    const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Topology-derived floor plan "+plan.profile;img.src=URL.createObjectURL(new Blob([plan.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);plansHost.append(card);
+   }
+   const report=document.createElement("pre");report.className="details";report.style.gridColumn="1/-1";report.textContent=payload.topology_plan_report||"";plansHost.append(report);
+  }else{plansHost.textContent=payload.topology_plan_error||"No topology graph could be realized as floor-plan geometry for this brief."}
   $("status").textContent=success+" candidate(s) generated";
  }catch(err){$("results").className="empty";$("results").textContent="Could not contact local generation service: "+err.message;$("status").textContent="Local service unavailable"}
  finally{button.disabled=false}
