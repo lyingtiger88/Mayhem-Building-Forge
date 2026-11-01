@@ -387,6 +387,25 @@ void residential_layout(){
 
 
 
+void wide_shallow_residential_variations(){
+ mbf::ResidentialLayoutSettings settings;
+ settings.width_m=17.0;settings.depth_m=10.0;settings.seed=42;
+ const auto variations=mbf::generate_residential_variations(settings);
+ req(!variations.empty(),"wide shallow 17x10 buildable footprint produces residential candidates");
+ for(const auto& variation:variations){
+  req(variation.validation.valid,"wide shallow candidate passes architectural validation");
+  const auto bedroom=std::find_if(variation.layout.rooms.begin(),variation.layout.rooms.end(),
+   [](const auto& room){return room.role==mbf::RoomRole::Bedroom;});
+  req(bedroom!=variation.layout.rooms.end(),"wide shallow candidate retains bedroom");
+  double min_x=1e9,min_y=1e9,max_x=-1e9,max_y=-1e9;
+  for(const auto& point:bedroom->footprint.vertices){
+   min_x=std::min(min_x,point.x);min_y=std::min(min_y,point.y);
+   max_x=std::max(max_x,point.x);max_y=std::max(max_y,point.y);
+  }
+  const double ratio=std::max((max_x-min_x)/(max_y-min_y),(max_y-min_y)/(max_x-min_x));
+  req(ratio<=4.5+1e-7,"wide shallow bedroom aspect ratio remains within architectural limit");
+ }
+}
 void residential_variations(){
  using namespace mbf;
  ResidentialLayoutSettings settings;
@@ -657,4 +676,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
