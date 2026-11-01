@@ -293,7 +293,86 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
                     if(avoided_roles(candidate.rooms[i].role,candidate.rooms[j].role))return;
                 }
             }
+            // Build explicit circulation links from realized shared boundaries.
+            candidate.circulation_links.clear();
+            for(const auto& adjacency:candidate.adjacency) {
+                const double length=shared_length(candidate.rooms[adjacency.first].bounds,
+                                                  candidate.rooms[adjacency.second].bounds);
+                if(length>1e-7)
+                    candidate.circulation_links.push_back({adjacency.first,adjacency.second,length});
+            }
+            // Every room must be reachable through actual shared room boundaries.
+            std::vector<bool> reached(candidate.rooms.size(),false);
+            std::vector<RoomId> pending{0U};
+            reached[0]=true;
+            for(std::size_t cursor=0;cursor<pending.size();++cursor) {
+                const RoomId current=pending[cursor];
+                for(const auto& link:candidate.circulation_links) {
+                    RoomId next=static_cast<RoomId>(candidate.rooms.size());
+                    if(link.from_room==current)next=link.to_room;
+                    else if(link.to_room==current)next=link.from_room;
+                    if(next<candidate.rooms.size()&&!reached[next]) {
+                        reached[next]=true;
+                        pending.push_back(next);
+                    }
+                }
+            }
+            if(std::find(reached.begin(),reached.end(),false)!=reached.end())return;
+
+            // Place the entrance on the requested facade, preferring a circulation
+            // room and then a public room with sufficient clear frontage.
+            RoomId entrance_room=static_cast<RoomId>(candidate.rooms.size());
+            double entrance_priority=-1e30;
+            for(const auto& room:candidate.rooms) {
+                const auto& b=room.bounds;
+                double frontage=0.0;
+                bool touches=false;
+                switch(brief.entrance_side) {
+                    case EntranceSide::South:touches=std::abs(b.y)<1e-7;frontage=b.width;break;
+                    case EntranceSide::North:touches=std::abs(b.y+b.height-settings.depth_m)<1e-7;frontage=b.width;break;
+                    case EntranceSide::West:touches=std::abs(b.x)<1e-7;frontage=b.height;break;
+                    case EntranceSide::East:touches=std::abs(b.x+b.width-settings.width_m)<1e-7;frontage=b.height;break;
+                }
+                if(!touches||frontage<0.9-1e-7)continue;
+                double priority=std::min(frontage,3.0);
+                if(room.role==RoomRole::Hallway||room.role==RoomRole::Circulation)priority+=100.0;
+                else if(room.role==RoomRole::Living||room.role==RoomRole::Public)priority+=30.0;
+                else if(room.role==RoomRole::Kitchen)priority+=10.0;
+                else if(room.role==RoomRole::Bedroom||room.role==RoomRole::Private)priority-=20.0;
+                if(priority>entrance_priority) {
+                    entrance_priority=priority;
+                    entrance_room=room.id;
+                }
+            }
+            if(entrance_room>=candidate.rooms.size())return;
+            const auto& host=candidate.rooms[entrance_room].bounds;
+            const double clear_width=std::min(1.0,
+                (brief.entrance_side==EntranceSide::South||brief.entrance_side==EntranceSide::North)
+                    ? host.width:host.height);
+            if(clear_width<0.9-1e-7)return;
+            candidate.entrance.defined=true;
+            candidate.entrance.side=brief.entrance_side;
+            candidate.entrance.room_id=entrance_room;
+            candidate.entrance.clear_width_m=clear_width;
+            if(brief.entrance_side==EntranceSide::South||brief.entrance_side==EntranceSide::North) {
+                candidate.entrance.start_x=host.x+(host.width-clear_width)*0.5;
+                candidate.entrance.end_x=candidate.entrance.start_x+clear_width;
+                candidate.entrance.start_y=candidate.entrance.end_y=
+                    brief.entrance_side==EntranceSide::South?0.0:settings.depth_m;
+            } else {
+                candidate.entrance.start_y=host.y+(host.height-clear_width)*0.5;
+                candidate.entrance.end_y=candidate.entrance.start_y+clear_width;
+                candidate.entrance.start_x=candidate.entrance.end_x=
+                    brief.entrance_side==EntranceSide::West?0.0:settings.width_m;
+            }
+
             double score=layout_score(candidate,roles)+topology.quality_score;
+            if(candidate.entrance.room_id<candidate.rooms.size()) {
+                const auto role=candidate.rooms[candidate.entrance.room_id].role;
+                if(role==RoomRole::Hallway||role==RoomRole::Circulation)score+=18.0;
+                else if(role==RoomRole::Living||role==RoomRole::Public)score+=5.0;
+                else score-=12.0;
+            }
             // Reward longer required interfaces while retaining compact room shapes.
             for(const auto& edge:topology.edges) {
                 const double length=shared_length(candidate.rooms[edge.first].bounds,
