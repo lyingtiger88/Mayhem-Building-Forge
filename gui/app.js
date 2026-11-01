@@ -1,7 +1,19 @@
 const $=id=>document.getElementById(id);
 const fields=["width","depth","south","north","east","west","entrance","floors","bedrooms","bathrooms","seed","profile"];
 const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,entrance:"south",floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
-$("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k]});
+function updateSiteSummary(){
+ const width=Number($("width").value)-Number($("east").value)-Number($("west").value);
+ const depth=Number($("depth").value)-Number($("south").value)-Number($("north").value);
+ const host=$("siteSummary");
+ if(width<=0||depth<=0||!Number.isFinite(width)||!Number.isFinite(depth)){
+  host.textContent="Invalid setbacks: no buildable footprint remains.";host.style.color="#ff8585";return;
+ }
+ host.textContent="Buildable footprint: "+width.toFixed(1)+" × "+depth.toFixed(1)+" m · "+(width*depth).toFixed(1)+" m²";
+ host.style.color="var(--muted)";
+}
+for(const id of ["width","depth","south","north","east","west"])$(id).addEventListener("input",updateSiteSummary);
+$("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k];updateSiteSummary()});
+updateSiteSummary();
 $("exportBrief").addEventListener("click",()=>{
  const brief={};for(const k of fields)brief[k]=$(k).type==="number"?Number($(k).value):$(k).value;
  const blob=new Blob([JSON.stringify(brief,null,2)],{type:"application/json"});
@@ -10,7 +22,7 @@ $("exportBrief").addEventListener("click",()=>{
 $("importBrief").addEventListener("click",()=>$("briefFile").click());
 $("briefFile").addEventListener("change",async()=>{
  const file=$("briefFile").files[0];if(!file)return;
- try{const brief=JSON.parse(await file.text());for(const k of fields)if(brief[k]!==undefined)$(k).value=brief[k];$("status").textContent="Building brief imported";}catch(err){$("status").textContent="Invalid brief JSON: "+err.message;}
+ try{const brief=JSON.parse(await file.text());for(const k of fields)if(brief[k]!==undefined)$(k).value=brief[k];updateSiteSummary();$("status").textContent="Building brief imported";}catch(err){$("status").textContent="Invalid brief JSON: "+err.message;}
  $("briefFile").value="";
 });
 function addSvgDownload(card,svg,filename){
