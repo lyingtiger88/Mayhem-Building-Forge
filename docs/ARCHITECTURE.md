@@ -145,7 +145,7 @@ Multiplayer is deferred. Once determinism and the building model are stable, rep
 
 Implemented now:
 - C++20 core library;
-- grid-growth and weighted treemap floor-plan generation;
+- grid-growth and weighted treemap floor-plan generation;\n- initial room-topology graph candidate generation and graph validation;
 - room regions, areas, bounds, cell ownership, and adjacency;
 - basic validation;
 - CMake sample and regression tests.
