@@ -33,8 +33,8 @@ Keep the PowerShell window open while using the Lab. Press Ctrl+C in that window
 
 - Site width/depth: outer site dimensions in metres.
 - South/north/east/west setbacks: deducted from the site to calculate the buildable rectangular footprint.
-- Floors: number of repeated floors in the current model.
-- Bedrooms requested: current residential solver accepts exactly one bedroom.
+- Floors: the topology-driven solver currently accepts one floor; multi-floor requests are rejected explicitly.
+- Bedrooms requested: the experimental topology-driven solver accepts 1–4 bedrooms.
 - Seed: reproducible generation seed.
 - Design variations: generate one selected profile or compare all three currently implemented profiles.
 
