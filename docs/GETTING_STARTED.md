@@ -55,14 +55,16 @@ Windows:
 The command validates candidate plans and physical circulation, selects the highest-scoring supported profile (or a requested profile), validates the repeated-floor model, and exports an SVG floor plan.
 
 Supported inputs in this prototype:
-- `--width` and `--depth`: footprint dimensions in metres.
+- `--width` and `--depth`: site dimensions in metres.
+- `--setback-south`, `--setback-north`, `--setback-east`, `--setback-west`: site setbacks in metres; these are subtracted to calculate the buildable footprint.
+- `--bedrooms`: requested bedroom count; the current layout solver supports exactly one and reports other counts as unsupported rather than silently ignoring them.
 - `--floors`: 1–200 repeated floors.
 - `--height`: floor-to-floor height in metres.
 - `--profile`: `best`, `balanced`, `open`, or `privacy`.
 - `--seed`: reproducible seed.
 - `--output`: SVG destination.
 
-Current limitation: the planner creates a five-room, two-bedroom residential typology. It does not yet accept arbitrary room counts, custom room schedules, plot constraints, or produce 3D meshes. Multi-floor output currently repeats the same validated floor plan.
+Current limitation: the planner creates a five-space, one-bedroom residential typology. The Building Brief API can validate room schedules and adjacency requests, but the layout solver does not yet generate arbitrary room counts or custom room schedules. Site setbacks are validated and applied; local zoning/code rules, orientation variants, and 3D meshes are not yet implemented. Multi-floor output currently repeats the same validated floor plan.
 
 Run `mbf_build_house --help` for the complete command reference.
 
