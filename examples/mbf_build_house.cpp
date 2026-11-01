@@ -1,4 +1,5 @@
 #include "mbf/multi_floor.hpp"
+#include "mbf/building_brief.hpp"
 #include "mbf/residential_layout.hpp"
 #include <cstdlib>
 #include <iomanip>
@@ -53,12 +54,33 @@ int main(int argc,char** argv) {
                 const auto n=integer(value,"--floors");
                 if(n==0||n>200)throw std::invalid_argument("--floors must be between 1 and 200");
                 floors=static_cast<std::uint32_t>(n);
-            } else if(arg=="--height")floor_height=number(value,"--height");
+            } else if(arg=="--height")floor_height=number(value,"--height");\n            else if(arg=="--bedrooms") { const auto n=integer(value,"--bedrooms"); if(n==0||n>20)throw std::invalid_argument("--bedrooms must be between 1 and 20"); bedrooms=static_cast<std::uint32_t>(n); }\n            else if(arg=="--setback-south")setback_south=number(value,"--setback-south");\n            else if(arg=="--setback-north")setback_north=number(value,"--setback-north");\n            else if(arg=="--setback-east")setback_east=number(value,"--setback-east");\n            else if(arg=="--setback-west")setback_west=number(value,"--setback-west");
             else if(arg=="--profile")profile=value;
             else if(arg=="--seed")settings.seed=integer(value,"--seed");
             else if(arg=="--output")output=value;
             else throw std::invalid_argument("Unknown option: "+arg);
         }
+
+        auto brief=make_default_residential_brief();
+        brief.site_width_m=settings.width_m;brief.site_depth_m=settings.depth_m;
+        brief.floor_count=floors;brief.floor_to_floor_height_m=floor_height;brief.seed=settings.seed;
+        brief.setback_south_m=setback_south;brief.setback_north_m=setback_north;
+        brief.setback_east_m=setback_east;brief.setback_west_m=setback_west;
+        brief.rooms[2].count=bedrooms;
+        const auto brief_validation=validate_building_brief(brief);
+        if(!brief_validation.valid) {
+            std::cerr<<"Building brief is invalid:\\n";
+            for(const auto& error:brief_validation.errors)std::cerr<<" - "<<error<<'\\n';
+            return EXIT_FAILURE;
+        }
+        const auto compatibility=check_current_planner_compatibility(brief);
+        if(!compatibility.supported) {
+            std::cerr<<"Brief is valid, but the current planner cannot yet satisfy it:\\n";
+            for(const auto& limitation:compatibility.limitations)std::cerr<<" - "<<limitation<<'\\n';
+            return EXIT_FAILURE;
+        }
+        settings.width_m=brief_validation.buildable_width_m;
+        settings.depth_m=brief_validation.buildable_depth_m;
 
         const auto variations=generate_residential_variations(settings);
         if(variations.empty()) {
