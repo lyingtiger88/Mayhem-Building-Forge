@@ -10,13 +10,6 @@ const PlannedRoom* find_room(const ResidentialLayout2D& layout,RoomId id) {
         [&](const PlannedRoom& room){return room.id==id;});
     return it==layout.rooms.end()?nullptr:&*it;
 }
-bool same_polygon(const Polygon2D& a,const Polygon2D& b,double tolerance) {
-    const double aa=polygon_area(a),ab=polygon_area(b);
-    const double overlap=polygon_intersection_area(a,b,tolerance);
-    return std::isfinite(overlap)&&std::abs(aa-ab)<=tolerance&&
-           std::abs(overlap-std::min(aa,ab))<=tolerance;
-}
-}
 
 MultiFloorBuilding generate_stacked_building(const ResidentialLayout2D& typical,
         std::uint32_t floor_count,double floor_height,double slab_thickness) {
