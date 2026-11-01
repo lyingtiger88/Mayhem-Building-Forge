@@ -20,14 +20,14 @@ for(const id of ["width","depth","south","north","east","west","bedrooms","bathr
 $("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k];updateSiteSummary()});
 updateSiteSummary();
 $("exportBrief").addEventListener("click",()=>{
- const brief={};for(const k of fields)brief[k]=$(k).type==="number"?Number($(k).value):$(k).value;
+ const brief={schema_version:1};for(const k of fields)brief[k]=$(k).type==="number"?Number($(k).value):$(k).value;
  const blob=new Blob([JSON.stringify(brief,null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="mayhem-building-brief.json";link.click();URL.revokeObjectURL(url);
 });
 $("importBrief").addEventListener("click",()=>$("briefFile").click());
 $("briefFile").addEventListener("change",async()=>{
  const file=$("briefFile").files[0];if(!file)return;
- try{const brief=JSON.parse(await file.text());for(const k of fields)if(brief[k]!==undefined)$(k).value=brief[k];updateSiteSummary();$("status").textContent="Building brief imported";}catch(err){$("status").textContent="Invalid brief JSON: "+err.message;}
+ try{const brief=JSON.parse(await file.text());if(brief.schema_version!==undefined&&brief.schema_version!==1)throw new Error("Unsupported brief schema version");for(const k of fields)if(brief[k]!==undefined)$(k).value=brief[k];updateSiteSummary();$("status").textContent="Building brief imported";}catch(err){$("status").textContent="Invalid brief JSON: "+err.message;}
  $("briefFile").value="";
 });
 function addSvgDownload(card,svg,filename){
