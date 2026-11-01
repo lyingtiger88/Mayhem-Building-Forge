@@ -1,0 +1,31 @@
+/* Mayhem Parametric Lab — studio visual system */
+:root{--bg:#0c1016;--panel:#161c25;--panel2:#1b2330;--line:#303a49;--text:#f0f3f8;--muted:#a4b0bf;--accent:#ddbf8c;--good:#70d4ae}
+body{background:radial-gradient(ellipse 70% 35% at 65% -12%,rgba(190,153,100,.16),transparent),linear-gradient(160deg,#0d131d,#0b1016 72%);font-family:"Segoe UI",Inter,Arial,sans-serif;letter-spacing:.004em}
+header{background:rgba(13,19,26,.88);backdrop-filter:blur(18px);padding:25px 32px}
+h1{font-size:22px;font-weight:750;letter-spacing:.13em}header p{font-size:12px;letter-spacing:.03em}
+.pill{border-color:#6d5a3d;color:#edd2a4;background:rgba(221,191,140,.07);font-weight:700;letter-spacing:.08em}
+main{grid-template-columns:350px minmax(0,1fr);max-width:1720px;gap:20px;padding:22px}
+.panel{background:linear-gradient(150deg,#1b2430,#131a24);border-color:#35404c;border-radius:16px;box-shadow:0 12px 45px rgba(0,0,0,.15)}
+.panel h2{font-size:13px;letter-spacing:.07em;text-transform:uppercase;padding:18px 20px;color:#e5e8f0}
+.form{padding:18px;gap:16px}.group{gap:12px}.field{gap:7px}
+label{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#b6c0ca}
+input,select{border-radius:8px;border-color:#394454;background:#101722;padding:11px;font-size:13px;transition:border-color .2s,box-shadow .2s}
+input:hover,select:hover{border-color:#667789}
+input:focus,select:focus{outline:none;border-color:#d0ad76;box-shadow:0 0 0 3px rgba(221,191,140,.13)}
+button{background:linear-gradient(135deg,#eed4a8,#caa46e);color:#1d2126;border-radius:9px;padding:13px 15px;transition:transform .15s,filter .15s}
+button:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px)}
+.secondary{background:#293443;color:#e7edf5;border:1px solid #3f4d5b}
+.secondary:hover{background:#354252}
+.note{border-color:#766145;background:#2e281f;color:#f0d8b1;border-radius:10px;line-height:1.65}
+.toolbar{padding:18px 20px}.toolbar strong{font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.results{padding:18px;gap:18px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.result{background:#121a24;border-color:#3a4656;border-radius:13px;box-shadow:0 14px 30px rgba(0,0,0,.16);transition:transform .2s,border-color .2s}
+.result:hover{transform:translateY(-2px);border-color:#8a7659}
+.result-head{padding:14px 16px}.result-head b{font-size:13px}.result-head span{font-size:10px;color:#dfc496;letter-spacing:.04em}
+.preview{background:#edf0f3;padding:16px;min-height:300px}
+.preview img{height:390px;filter:drop-shadow(0 8px 14px rgba(27,40,58,.09))}
+.metric{background:#1e2a39;border-color:#3a4757;padding:10px}.metric b{font-size:17px;color:#f1d3a1}
+.metrics{padding:12px 14px;gap:9px}
+.empty{padding:58px 18px}.empty b{letter-spacing:.02em}
+.footer{padding:14px 18px}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:12px}.results{grid-template-columns:1fr}.preview img{height:320px}}
