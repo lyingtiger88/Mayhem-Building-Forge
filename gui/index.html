@@ -23,10 +23,11 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 <div class="field"><label for="west">West setback (m)</label><input id="west" type="number" min="0" step=".5" value="2"></div>
 <div class="field"><label for="floors">Floors</label><input id="floors" type="number" min="1" max="1" value="1"></div>
 <div class="field"><label for="bedrooms">Bedrooms requested</label><input id="bedrooms" type="number" min="1" max="4" value="1"></div>
+<div class="field"><label for="bathrooms">Bathrooms requested</label><input id="bathrooms" type="number" min="1" max="4" value="1"></div>
 <div class="field"><label for="seed">Generation seed</label><input id="seed" type="number" min="0" value="42"></div>
 <div class="field"><label for="profile">Design variations</label><select id="profile"><option value="all">Generate all current profiles</option><option value="balanced">Balanced conventional</option><option value="open">Open living</option><option value="privacy">Privacy first</option></select></div>
 </div>
-<div class="note"><b>Current engine boundary:</b> the topology-driven solver supports one floor and 1–4 bedrooms with a rectangular footprint. Multi-floor requests and unsupported briefs are rejected with diagnostics. Legacy profile variants remain a separate fixed-layout prototype.</div>
+<div class="note"><b>Current engine boundary:</b> the topology-driven solver supports one floor and 1–4 bedrooms and 1–4 bathrooms with a rectangular footprint. Multi-floor requests and unsupported briefs are rejected with diagnostics. Legacy profile variants remain a separate fixed-layout prototype.</div>
 <button id="generate" type="submit">Generate floor-plan candidates</button>
 <button id="reset" class="secondary" type="button">Reset example brief</button>
 <div class="hint">Generation runs locally on this computer. Brief data is sent only to the local server at 127.0.0.1.</div>
