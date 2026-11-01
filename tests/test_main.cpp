@@ -14,7 +14,8 @@
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
-#include <string>\n#include <set>
+#include <string>
+#include <set>
 #include <vector>
 namespace {
 void req(bool b,const std::string&m){if(!b){std::cerr<<"FAILED: "<<m<<'\n';std::exit(EXIT_FAILURE);}}
