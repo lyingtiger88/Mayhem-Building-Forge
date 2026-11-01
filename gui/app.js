@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
-const fields=["width","depth","south","north","east","west","entrance","floors","bedrooms","bathrooms","seed","profile"];
-const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,entrance:"south",floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
+const fields=["width","depth","south","north","east","west","entrance","floors","bedrooms","bathrooms","living_area","kitchen_area","bedroom_area","bathroom_area","hallway_area","seed","profile"];
+const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,entrance:"south",floors:1,bedrooms:1,bathrooms:1,living_area:24,kitchen_area:12,bedroom_area:14,bathroom_area:6,hallway_area:8,seed:42,profile:"all"};
 function updateSiteSummary(){
  const width=Number($("width").value)-Number($("east").value)-Number($("west").value);
  const depth=Number($("depth").value)-Number($("south").value)-Number($("north").value);
