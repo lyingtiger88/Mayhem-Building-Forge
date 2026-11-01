@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <set>
+#include <sstream>
 #include <string>
 
 int main(int argc,char** argv) {
@@ -75,6 +77,7 @@ int main(int argc,char** argv) {
         settings.seed=seed;
         FloorPlanGenerator generator;
         std::size_t exported=0;
+        std::set<std::string> geometric_signatures;
         std::cout<<"MAYHEM TOPOLOGY-DRIVEN HOUSE GENERATION\n";
         std::cout<<"Buildable footprint: "<<settings.width_m<<" x "<<settings.depth_m<<" m\n";
         std::cout<<"Requested bedrooms: "<<bedrooms<<"\n";
@@ -82,6 +85,16 @@ int main(int argc,char** argv) {
         for(const auto& topology:topologies) {
             try {
                 const auto plan=generator.generate_topology_layout(settings,brief,topology);
+                std::ostringstream signature;
+                signature.precision(2);
+                signature.setf(std::ios::fixed);
+                for(const auto& room:plan.rooms)
+                    signature<<room.id<<':'<<room.bounds.x<<','<<room.bounds.y<<','
+                             <<room.bounds.width<<','<<room.bounds.height<<';';
+                if(!geometric_signatures.insert(signature.str()).second) {
+                    std::cout<<"Skipped "<<topology.strategy_name<<": duplicate floor-plan geometry.\\n";
+                    continue;
+                }
                 const auto quality=evaluate_spatial_quality(plan,brief);
                 const auto geometry=build_geometry_2d(plan);
                 if(!geometry.valid) {
