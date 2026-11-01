@@ -93,7 +93,7 @@ int main(int argc,char** argv) {
         std::cout<<"Requested bathrooms: "<<bathrooms<<"\n";
         std::cout<<"Target room areas (m2): living "<<living_area<<", kitchen "<<kitchen_area
                  <<", bedroom "<<bedroom_area<<", bathroom "<<bathroom_area
-                 <<", hallway "<<hallway_area<<"\\n";
+                 <<", hallway "<<hallway_area<<"\n";
         for(const auto& topology:topologies) {
             try {
                 const auto plan=generator.generate_topology_layout(settings,brief,topology);
