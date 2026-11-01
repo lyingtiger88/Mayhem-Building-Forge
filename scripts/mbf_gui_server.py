@@ -124,6 +124,12 @@ def generate_topology_plans(executable: Path, values):
                 "quality": metrics,
                 "svg": path.read_text(encoding="utf-8"),
             })
+        candidates.sort(
+            key=lambda item: item.get("quality", {}).get("overall", -1.0),
+            reverse=True,
+        )
+        for rank, candidate in enumerate(candidates, start=1):
+            candidate["rank"] = rank
         return {
             "candidates": candidates,
             "report": completed.stdout[-10000:],
