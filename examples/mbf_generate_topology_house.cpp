@@ -140,6 +140,8 @@ int main(int argc,char** argv) {
                          <<" | doors "<<doors<<" | windows "<<windows<<" | open-plan "<<open_plan
                          <<" | accessible "<<access.reachable_room_ids.size()<<"/"<<room_ids.size()
                          <<" | openings "<<opening_ids.size()<<" | "<<path<<'\n';
+                for(const auto& warning:quality.warnings)
+                    std::cout<<"Warning Candidate "<<exported<<": "<<warning<<'\n';
             } catch(const std::runtime_error& error) {
                 std::cout<<"Skipped "<<topology.strategy_name<<": "<<error.what()<<'\n';
             }
