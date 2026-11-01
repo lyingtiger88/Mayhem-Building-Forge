@@ -68,6 +68,20 @@ def generate(executable: Path, values, profile: str):
         return result
 
 
+def generate_topology_preview(executable: Path, bedrooms: int):
+    with tempfile.TemporaryDirectory(prefix="mbf-topology-") as temp:
+        output = Path(temp) / "topologies.svg"
+        completed = subprocess.run(
+            [str(executable), "--bedrooms", str(bedrooms), "--output", str(output)],
+            cwd=ROOT, capture_output=True, text=True, timeout=45, check=False,
+        )
+        return {
+            "svg": output.read_text(encoding="utf-8") if completed.returncode == 0 and output.is_file() else "",
+            "report": completed.stdout[-6000:],
+            "error": completed.stderr[-6000:] if completed.returncode else "",
+        }
+
+
 class Handler(BaseHTTPRequestHandler):
     executable: Path
 
@@ -105,9 +119,14 @@ class Handler(BaseHTTPRequestHandler):
             requested = PROFILES if profile == "all" else (profile,)
             candidates = [generate(self.executable, values, item) for item in requested]
             good = [candidate for candidate in candidates if candidate["ok"]]
-            message = "" if good else "No valid candidate was produced. See the diagnostics below."
-            body = json.dumps({"candidates": candidates, "error": message},
-                              ensure_ascii=False).encode("utf-8")
+            topology = generate_topology_preview(self.topology_executable, values["bedrooms"])
+            message = "" if good else "No valid floor-plan candidate was produced. See the diagnostics below."
+            body = json.dumps({
+                "candidates": candidates, "error": message,
+                "topology_svg": topology["svg"],
+                "topology_report": topology["report"],
+                "topology_error": topology["error"],
+            }, ensure_ascii=False).encode("utf-8")
             self.send_bytes(200, body, "application/json; charset=utf-8")
         except subprocess.TimeoutExpired:
             self.send_bytes(504, b'{"error":"Generation exceeded the 90-second time limit."}', "application/json")
@@ -126,14 +145,20 @@ def main():
     parser = argparse.ArgumentParser(description="Run the local Mayhem Building Forge Parametric Lab.")
     parser.add_argument("--exe", default="build/Release/mbf_build_house.exe",
                         help="Path to the compiled mbf_build_house executable.")
+    parser.add_argument("--topology-exe", default="build/Release/mbf_topology_preview.exe",
+                        help="Path to the compiled topology preview executable.")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     executable = (ROOT / args.exe).resolve() if not Path(args.exe).is_absolute() else Path(args.exe)
+    topology_executable = (ROOT / args.topology_exe).resolve() if not Path(args.topology_exe).is_absolute() else Path(args.topology_exe)
     if not executable.is_file():
         raise SystemExit(f"Generator executable not found: {executable}\nBuild it first with: cmake --build build --config Release")
+    if not topology_executable.is_file():
+        raise SystemExit(f"Topology preview executable not found: {topology_executable}\nBuild it first with: cmake --build build --config Release")
     if not (1 <= args.port <= 65535):
         raise SystemExit("Port must be between 1 and 65535.")
     Handler.executable = executable
+    Handler.topology_executable = topology_executable
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"Mayhem Parametric Lab is running at http://127.0.0.1:{args.port}")
     print(f"Native engine: {executable}")
