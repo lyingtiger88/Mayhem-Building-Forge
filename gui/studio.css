@@ -29,3 +29,10 @@ button:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px)}
 .empty{padding:58px 18px}.empty b{letter-spacing:.02em}
 .footer{padding:14px 18px}
 @media(max-width:900px){main{grid-template-columns:1fr;padding:12px}.results{grid-template-columns:1fr}.preview img{height:320px}}
+
+.furniture-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;background:#192331;border-bottom:1px solid #344252}
+.furniture-toolbar button{font-size:11px;padding:9px 12px}
+.furniture-toolbar small{color:#c4cfdb;margin-left:auto;line-height:1.5}
+.preview svg{width:100%;height:auto;max-height:560px;touch-action:none}
+.preview svg [data-furniture-id]{transition:filter .12s}
+@media(max-width:700px){.furniture-toolbar small{width:100%;margin-left:0}}
