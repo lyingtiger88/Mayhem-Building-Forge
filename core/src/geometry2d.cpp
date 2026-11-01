@@ -793,6 +793,9 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
            <<"\" data-kind=\""<<static_cast<int>(item.kind)<<"\" data-label=\"";
         append_svg_escape(svg,item.label);
         svg<<"\" data-movable=\""<<(item.movable?"true":"false")
+           <<"\" data-x=\""<<item.x<<"\" data-y=\""<<item.y
+           <<"\" data-width=\""<<item.width_m<<"\" data-depth=\""<<item.depth_m
+           <<"\" data-rotation=\""<<item.rotation_deg
            <<"\" transform=\"translate("<<cx<<" "<<cy<<") rotate("<<item.rotation_deg
            <<") translate("<<-item.width_m*0.5<<" "<<-item.depth_m*0.5<<")\">\n";
         const char* fill="#e6ddd0";const char* stroke="#8d806d";
