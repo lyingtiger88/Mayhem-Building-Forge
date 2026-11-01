@@ -35,7 +35,7 @@ def parse_brief(payload):
             raise ValueError(f"{key} must be between {low} and {high}.")
         if key in ("floors", "bedrooms", "bathrooms", "seed") and int(value) != value:
             raise ValueError(f"{key} must be an integer.")
-        values[key] = int(value) if key in ("floors", "bedrooms", "seed") else float(value)
+        values[key] = int(value) if key in ("floors", "bedrooms", "bathrooms", "seed") else float(value)
     entrance = payload.get("entrance", "south")
     if entrance not in ENTRANCE_SIDES:
         raise ValueError("entrance must be south, north, east, or west.")
