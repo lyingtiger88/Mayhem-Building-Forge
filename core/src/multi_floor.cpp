@@ -11,6 +11,8 @@ const PlannedRoom* find_room(const ResidentialLayout2D& layout,RoomId id) {
     return it==layout.rooms.end()?nullptr:&*it;
 }
 
+} // namespace
+
 MultiFloorBuilding generate_stacked_building(const ResidentialLayout2D& typical,
         std::uint32_t floor_count,double floor_height,double slab_thickness) {
     if(floor_count==0U)throw std::invalid_argument("A building must contain at least one floor.");
