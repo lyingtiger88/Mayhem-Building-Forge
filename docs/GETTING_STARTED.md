@@ -43,7 +43,30 @@ For a single-configuration Linux generator, omit -C Release.
 
 Current tests check deterministic grid output, grid coverage, non-empty rooms, treemap area coverage, adjacency output, and rejection of invalid dimensions. These are foundation tests, not a full architectural compliance suite.
 
-## 5. Run the sample
+## 5. Generate a parametric residential house
+
+Build the `mbf_build_house` target, then run it from the repository root:
+
+Windows:
+```powershell
+.\build\Release\mbf_build_house.exe --width 12 --depth 9 --floors 2 --height 3.2 --profile best --seed 42 --output house.svg
+```
+
+The command validates candidate plans and physical circulation, selects the highest-scoring supported profile (or a requested profile), validates the repeated-floor model, and exports an SVG floor plan.
+
+Supported inputs in this prototype:
+- `--width` and `--depth`: footprint dimensions in metres.
+- `--floors`: 1–200 repeated floors.
+- `--height`: floor-to-floor height in metres.
+- `--profile`: `best`, `balanced`, `open`, or `privacy`.
+- `--seed`: reproducible seed.
+- `--output`: SVG destination.
+
+Current limitation: the planner creates a five-room, two-bedroom residential typology. It does not yet accept arbitrary room counts, custom room schedules, plot constraints, or produce 3D meshes. Multi-floor output currently repeats the same validated floor plan.
+
+Run `mbf_build_house --help` for the complete command reference.
+
+## 6. Run the sample
 
 Windows Visual Studio generator:
 
@@ -55,7 +78,7 @@ Linux or single-configuration build:
 
 The sample generates a seeded floor plan and prints each room's area, cell count, and number of room adjacencies.
 
-## 6. Modify the sample
+## 7. Modify the sample
 
 Edit examples/generate_sample.cpp to change:
 - building width and depth in metres;
@@ -65,7 +88,7 @@ Edit examples/generate_sample.cpp to change:
 
 Rebuild and run again. Current room areas are approximate weighted shares; minimum room dimensions and architectural circulation rules are not enforced yet.
 
-## 7. Further reading
+## 8. Further reading
 
 - Product capabilities and limitations: README.md
 - Technical design: ARCHITECTURE.md
