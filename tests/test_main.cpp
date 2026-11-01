@@ -1,6 +1,7 @@
 #include "mbf/floor_plan.hpp"
 #include "mbf/generator.hpp"
 #include "mbf/geometry2d.hpp"
+#include "mbf/furniture2d.hpp"
 #include "mbf/polygon.hpp"
 #include "mbf/polygon_region.hpp"
 #include "mbf/polygon_offset.hpp"
@@ -855,6 +856,24 @@ void circulation_access_graph(){
 void geometry2d_grid(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,64,20261031},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"grid converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all grid rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(!r.rings.empty(),"grid room has polygon rings");req(r.area_m2>0,"grid polygon has positive area");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"grid polygon area conserves footprint");}
 void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_treemap({18,12,48,99},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"treemap converts to valid 2D geometry");req(result.geometry.rooms.size()==p.rooms.size(),"all treemap rooms converted");double area=0;for(const auto&r:result.geometry.rooms){req(r.rings.size()==1U,"treemap room is one rectangle ring");area+=r.area_m2;}req(std::abs(area-216.0)<1e-5,"treemap polygon area conserves footprint");}
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
+void furniture_layout(){
+ mbf::FloorPlanGenerator generator;
+ const auto plan=generator.generate_treemap({18,12,64,20261101},sample());
+ const auto geometry=mbf::build_geometry_2d(plan);
+ req(geometry.valid,"furniture fixture geometry is valid");
+ const auto layout=mbf::generate_furniture_layout(geometry.geometry);
+ req(layout.valid,"generated furniture layout passes geometric validation");
+ req(!layout.items.empty(),"furniture engine places at least one item");
+ std::set<std::uint64_t> ids;
+ for(const auto& item:layout.items){
+  req(item.id!=0U&&ids.insert(item.id).second,"furniture ids are unique and nonzero");
+  req(item.width_m>0.0&&item.depth_m>0.0,"furniture dimensions are positive");
+  req(item.movable&&item.collision_enabled,"furniture defaults to movable collision-enabled entities");
+ }
+ std::vector<std::string> diagnostics;
+ req(mbf::validate_furniture_layout(geometry.geometry,layout,1e-6,&diagnostics),
+     "furniture footprints remain within their rooms and clear of each other");
+}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();room_topology_generation();topology_to_geometry_solver();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();room_topology_generation();topology_to_geometry_solver();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();furniture_layout();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
