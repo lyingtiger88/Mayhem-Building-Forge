@@ -374,6 +374,16 @@ void topology_to_geometry_solver(){
    std::ifstream svg_input(wall_svg);
    const std::string svg_text((std::istreambuf_iterator<char>(svg_input)),
                                std::istreambuf_iterator<char>());
+   req(svg_text.find("id=\\"FURNITURE\\"")!=std::string::npos,
+       "architectural SVG includes a procedural furniture layer");
+   req(svg_text.find("#f8f3e9")!=std::string::npos,
+       "bedroom furniture symbols are exported");
+   req(svg_text.find("#d8c6b2")!=std::string::npos,
+       "living-room sofa symbols are exported");
+   req(svg_text.find("#e8e3d9")!=std::string::npos,
+       "kitchen counter symbols are exported");
+   req(svg_text.find("#dcebf0")!=std::string::npos,
+       "bathroom fixture symbols are exported");
    req(svg_text.find("MAYHEM  /  FLOOR PLAN")!=std::string::npos,
        "architectural SVG includes the branded title");
    req(svg_text.find("scale(1 -1)")!=std::string::npos,
