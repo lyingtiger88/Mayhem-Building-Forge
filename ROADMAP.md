@@ -29,7 +29,7 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 **Exit criteria:** Core builds in CI; fixed inputs produce repeatable results; sample and regression tests run. This does not certify architectural correctness.
 
 ## Milestone 1 — 2D architectural geometry
-**Status: In progress — concave polygon regions, interior voids, and partition coverage validation implemented**
+**Status: In progress — geometry foundation and first parameter-driven residential generation workflow available**
 
 This milestone turns abstract room allocations into an explicit, inspectable 2D architectural drawing. It is the prerequisite for reliable 3D extrusion.
 
@@ -74,6 +74,11 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 - [x] Add deterministic residential profiles and generate multiple architecturally validated candidates from one footprint and brief.
 - [ ] Expand profiles into genuinely different room graphs, including optional vestibules and alternative corridor topologies.
 - [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
+- [x] Add a command-line parametric house-generation workflow accepting footprint dimensions, floor count, floor height, profile, seed, and SVG output path.
+- [x] Validate generated candidates and physical circulation before selecting/exporting a plan.
+- [ ] Expand the building brief to accept arbitrary room schedules (room types/counts, target areas, priorities, required adjacencies, and exclusions).
+- [ ] Add site/plot constraints, orientation, access side, setbacks, accessibility targets, and local rule profiles to the user-facing brief.
+- [ ] Generate genuinely different floor plans from the requested room schedule, not only the current five-room/two-bedroom template.
 
 **Exit criteria:** Both algorithms produce the same canonical 2D geometry contract. Results have valid room polygons, classified walls, consistent adjacency, and connected access graphs; invalid layouts return actionable diagnostics. A plan can be inspected without Unreal Engine.
 
@@ -250,9 +255,13 @@ The first balanced south-entry residential layout is accepted as one selectable 
 
 ## Current execution order
 
-1. Complete Milestone 1: canonical 2D geometry, arbitrary outer envelopes and holes, walls, openings, physical circulation, and SVG/debug output.
-2. Complete Milestone 2: multi-floor model and vertical circulation.
-3. Complete Milestone 3: 3D structural geometry generated from the validated 2D model.
-4. Continue with facades and complete interiors.
+The project is now prioritizing a visible, user-driven vertical slice rather than adding more isolated backend interfaces:
 
-Do not jump to 3D meshes before the 2D geometry contract and validation are reliable.
+1. Make the current parametric house generator easy to run and inspect; keep its supported inputs and limitations explicit.
+2. Expand the building brief to support arbitrary room schedules, plot/access constraints, orientation, and architectural priorities; generate and rank candidates against hard constraints and soft quality objectives.
+3. Complete multi-floor vertical circulation (actual stairs, landings, elevator openings, and traversable links).
+4. Generate the first 3D shell from an accepted plan: walls with thickness, floor slab, roof, doors, and windows.
+5. Add a visual authoring interface and then full interiors/furnishing.
+6. Build the Unreal Blueprint integration after the engine-neutral building data contract and 3D geometry are stable.
+
+A milestone is not considered user-visible complete until the user can run it, inspect an artifact, and see validation results. Do not describe a data contract or API as a finished user-facing feature.
