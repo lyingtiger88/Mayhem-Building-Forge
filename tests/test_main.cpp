@@ -8,6 +8,7 @@
 #include "mbf/multi_floor.hpp"
 #include "mbf/building_brief.hpp"
 #include "mbf/topology.hpp"
+#include "mbf/spatial_quality.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -314,6 +315,16 @@ void topology_to_geometry_solver(){
        "topology-derived entrance has a usable clear width");
    req(plan.circulation_links.size()+1U>=plan.rooms.size(),
        "topology-derived plan has connected room-to-room circulation links");
+   const auto quality=evaluate_spatial_quality(plan,brief);
+   req(quality.valid,"spatial quality report is generated for a valid plan");
+   req(quality.circulation_connected&&quality.circulation_score>=70.0,
+       "spatial quality evaluator recognizes connected circulation");
+   req(quality.rooms.size()==plan.rooms.size(),
+       "spatial quality report includes metrics for every room");
+   req(quality.daylight_score>=0.0&&quality.daylight_score<=100.0&&
+       quality.privacy_score>=0.0&&quality.privacy_score<=100.0&&
+       quality.overall_score>=0.0&&quality.overall_score<=100.0,
+       "spatial quality scores remain within normalized bounds");
    selected=std::move(plan);solved=true;break;
   } catch(const std::runtime_error&) {
    // Some graph candidates may not fit the current rectangular slicing solver.
