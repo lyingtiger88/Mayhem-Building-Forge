@@ -335,6 +335,22 @@ void topology_to_geometry_solver(){
    const auto has_open_plan=std::any_of(wall_topology.openings.begin(),wall_topology.openings.end(),
        [](const WallOpening2D& opening){return opening.kind==OpeningKind2D::OpenPlan;});
    req(has_open_plan,"living/public room connections can use open-plan openings");
+   for(const auto& opening:wall_topology.openings) {
+    const auto wall=std::find_if(wall_topology.walls.begin(),wall_topology.walls.end(),
+     [&](const BoundarySegment2D& item){return item.id==opening.wall_id;});
+    req(wall!=wall_topology.walls.end(),"every generated opening references a real wall");
+    req(opening.offset_m>=0.15-1e-7&&opening.width_m>0.0&&
+        opening.offset_m+opening.width_m<=wall->length_m-0.15+1e-7,
+        "role-based opening dimensions preserve wall-end clearances");
+   }
+   for(std::size_t i=0;i<wall_topology.openings.size();++i)
+    for(std::size_t j=i+1;j<wall_topology.openings.size();++j)
+     if(wall_topology.openings[i].wall_id==wall_topology.openings[j].wall_id) {
+      const auto& a=wall_topology.openings[i];const auto& b=wall_topology.openings[j];
+      req(std::min(a.offset_m+a.width_m,b.offset_m+b.width_m)-
+          std::max(a.offset_m,b.offset_m)<=1e-7,
+          "openings on the same wall do not overlap");
+     }
    const auto hallway_window=std::any_of(wall_topology.openings.begin(),wall_topology.openings.end(),
        [&](const WallOpening2D& opening){
            if(opening.kind!=OpeningKind2D::Window)return false;
