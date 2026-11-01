@@ -89,7 +89,7 @@ int main(int argc,char** argv) {
                 OpeningSettings2D opening_settings;
                 opening_settings.interior_door_width_m=0.9;
                 opening_settings.window_width_m=1.2;
-                const auto opening_ids=generate_default_openings(walls,plan.entrance,opening_settings);
+                const auto opening_ids=generate_residential_openings(walls,plan,opening_settings);
                 std::vector<RoomId> room_ids;
                 for(const auto& room:plan.rooms)room_ids.push_back(room.id);
                 const auto access=build_circulation_graph(walls,room_ids,0.8);
@@ -103,6 +103,8 @@ int main(int argc,char** argv) {
                         opening.kind==OpeningKind2D::InteriorDoor;});
                 const auto windows=std::count_if(walls.openings.begin(),walls.openings.end(),
                     [](const WallOpening2D& opening){return opening.kind==OpeningKind2D::Window;});
+                const auto open_plan=std::count_if(walls.openings.begin(),walls.openings.end(),
+                    [](const WallOpening2D& opening){return opening.kind==OpeningKind2D::OpenPlan;});
                 const std::string path=prefix+"_"+std::to_string(++exported)+".svg";
                 std::string error;
                 if(!export_wall_topology_svg(geometry.geometry,walls,path,&error)) {
@@ -115,7 +117,7 @@ int main(int argc,char** argv) {
                          <<topology.quality_score<<" | daylight "<<quality.daylight_score
                          <<" | privacy "<<quality.privacy_score<<" | circulation "
                          <<quality.circulation_score<<" | overall "<<quality.overall_score
-                         <<" | doors "<<doors<<" | windows "<<windows
+                         <<" | doors "<<doors<<" | windows "<<windows<<" | open-plan "<<open_plan
                          <<" | accessible "<<access.reachable_room_ids.size()<<"/"<<room_ids.size()
                          <<" | openings "<<opening_ids.size()<<" | "<<path<<'\n';
             } catch(const std::runtime_error& error) {
