@@ -102,7 +102,7 @@ def generate_topology_plans(executable: Path, values):
                 if line.startswith(f"Candidate {index}:"):
                     fields = [part.strip() for part in line.split("|")]
                     strategy = fields[0].split(":", 1)[1].strip()
-                    for key in ("daylight", "privacy", "circulation", "overall", "doors", "windows", "openings"):
+                    for key in ("daylight", "privacy", "circulation", "overall", "doors", "windows", "openings", "open-plan"):
                         for field in fields[1:]:
                             if field.startswith(key + " "):
                                 try:
