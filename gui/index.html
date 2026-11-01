@@ -33,6 +33,7 @@ main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18p
 </form></section>
 <section class="workspace">
 <div class="panel"><div class="toolbar"><strong>Generated architectural candidates</strong><span id="status" class="status">Waiting for a generation request</span></div><div id="results" class="empty"><b>No plans generated yet</b>Adjust the building brief and run the native Mayhem generator. SVG previews will appear here.</div><div class="footer">Preview output is produced by mbf_build_house.exe. This is a development tool, not construction documentation or code-compliance certification.</div></div>
+<div class="panel"><h2>Room topology graphs</h2><div id="topologyPreview" class="empty"><b>No topology graphs yet</b>Generate a brief to inspect the distinct room-adjacency strategies. These diagrams show relationships, not room geometry.</div></div>
 <div class="panel"><h2>Current test coverage</h2><div class="results" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
 <div><b>Input validation</b><div class="hint">Site dimensions, setbacks, floor count, bedroom count.</div></div><div><b>Native generation</b><div class="hint">C++ residential topology and geometry validation.</div></div><div><b>Profile comparison</b><div class="hint">Balanced, open-living and privacy-first candidate profiles.</div></div><div><b>Diagnostics</b><div class="hint">Build failures and unsupported requirements are surfaced.</div></div>
 </div></div>
@@ -57,6 +58,13 @@ $("brief").addEventListener("submit",async e=>{
    if(candidate.svg){const preview=document.createElement("div");preview.className="preview";const img=document.createElement("img");img.alt="Generated floor plan "+candidate.profile;img.src=URL.createObjectURL(new Blob([candidate.svg],{type:"image/svg+xml"}));preview.append(img);card.append(preview);success++}
    const detail=document.createElement("div");detail.className="details";detail.textContent=candidate.stdout||candidate.error||"";card.append(detail);host.append(card);
   }
+  const topologyHost=$("topologyPreview");topologyHost.className="empty";topologyHost.innerHTML="";
+  if(payload.topology_svg){
+   topologyHost.className="";topologyHost.style.padding="14px";
+   const graphImage=document.createElement("img");graphImage.alt="Alternative room adjacency graph candidates";graphImage.style.width="100%";graphImage.style.background="#f8fafc";graphImage.style.borderRadius="8px";
+   graphImage.src=URL.createObjectURL(new Blob([payload.topology_svg],{type:"image/svg+xml"}));topologyHost.append(graphImage);
+   const caption=document.createElement("div");caption.className="details";caption.textContent=payload.topology_report||"Topology graph candidates generated.";topologyHost.append(caption);
+  }else{topologyHost.textContent=payload.topology_error||"Topology graph preview unavailable."}
   $("status").textContent=success+" candidate(s) generated";
  }catch(err){$("results").className="empty";$("results").textContent="Could not contact local generation service: "+err.message;$("status").textContent="Local service unavailable"}
  finally{button.disabled=false}
