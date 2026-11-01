@@ -80,14 +80,17 @@ This milestone turns abstract room allocations into an explicit, inspectable 2D 
 The new standalone Polygon Engine, polygon-region partition validator, normalized boundary graph, and polygon-based balanced residential planner are the active geometry foundation: it builds and validates simple polygons independently of room-layout generation and exports a polygon gallery SVG. The earlier residential prototype remains experimental. Current sample uses a topology-first residential prototype with a south-side entrance. It searches deterministic rectangular partition candidates and rejects layouts unless living adjoins kitchen and hallway, hallway adjoins kitchen, bedroom, and bathroom, and the hallway touches the selected entrance facade. The model records the entrance segment and preliminary shared-boundary access links. This is a constrained prototype, not yet a complete circulation solution: doors, corridor clear-width validation, furnishing clearances, daylight, and building-code rules remain pending. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
-**Status: Planned**
+**Status: In progress — initial engine-neutral floor-stack contract and vertical-core validation implemented**
 
-- [ ] Building envelope and floor stack.
-- [ ] Floor-to-floor heights and slab thickness.
-- [ ] Stair and elevator core continuity.
-- [ ] Vertical alignment of structural elements.
-- [ ] Inter-floor circulation validation.
-- [ ] Building-level data contract and versioning.
+- [x] Add a versioned building-level data contract containing ordered floor records and vertical-core definitions.
+- [x] Generate deterministic repeated floor stacks from a validated canonical 2D residential plan.
+- [x] Store per-floor elevation, floor-to-floor height, slab thickness, and independent 2D layout data.
+- [x] Validate consecutive floor indices, elevation progression, floor-plate alignment, slab limits, and each floor's 2D plan.
+- [x] Model stair/elevator core footprints with stable IDs and per-floor room mappings; validate containment and non-overlap.
+- [ ] Generate and validate actual stair flights, landings, elevator door openings, and inter-floor traversable links.
+- [ ] Support floor-specific plan variations while preserving structural grid and shaft alignment.
+- [ ] Validate vertical structural elements (columns, shear walls, load-bearing walls) across floor transitions.
+- [ ] Add multi-floor serialization, schema migration, and reference fixtures.
 
 **Exit criteria:** Multiple floors have aligned floor plates and valid vertical circulation. Each floor uses the canonical 2D geometry model from Milestone 1.
 
