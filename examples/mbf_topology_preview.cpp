@@ -6,12 +6,12 @@
 
 int main(int argc,char** argv) {
     try {
-        std::uint32_t bedrooms=1;
+        std::uint32_t bedrooms=1,bathrooms=1;
         std::string output="mayhem_topology_candidates.svg";
         for(int i=1;i<argc;++i) {
             const std::string arg=argv[i];
             if(arg=="--help") {
-                std::cout<<"Usage: mbf_topology_preview [--bedrooms COUNT] [--output FILE.svg]\n";
+                std::cout<<"Usage: mbf_topology_preview [--bedrooms COUNT] [--bathrooms COUNT] [--output FILE.svg]\n";
                 return EXIT_SUCCESS;
             }
             if(i+1>=argc)throw std::invalid_argument("Missing value after "+arg);
@@ -20,11 +20,15 @@ int main(int argc,char** argv) {
                 const auto parsed=std::stoul(value);
                 if(parsed<1U||parsed>4U)throw std::invalid_argument("--bedrooms must be between 1 and 4 for this default brief.");
                 bedrooms=static_cast<std::uint32_t>(parsed);
+            } else if(arg=="--bathrooms") {
+                const auto parsed=std::stoul(value);
+                if(parsed<1U||parsed>4U)throw std::invalid_argument("--bathrooms must be between 1 and 4.");
+                bathrooms=static_cast<std::uint32_t>(parsed);
             } else if(arg=="--output")output=value;
             else throw std::invalid_argument("Unknown option: "+arg);
         }
         auto brief=mbf::make_default_residential_brief();
-        brief.rooms[2].count=bedrooms;
+        brief.rooms[2].count=bedrooms;brief.rooms[3].count=bathrooms;
         const auto validation=mbf::validate_building_brief(brief);
         if(!validation.valid) {
             for(const auto& error:validation.errors)std::cerr<<"Brief error: "<<error<<'\n';
@@ -39,7 +43,7 @@ int main(int argc,char** argv) {
         if(!mbf::export_room_topologies_svg(candidates,output,&error))
             throw std::runtime_error(error);
         std::cout<<"MAYHEM ROOM TOPOLOGY CANDIDATES\n"
-                 <<"Bedrooms: "<<bedrooms<<'\n'
+                 <<"Bedrooms: "<<bedrooms<<'\n'<<"Bathrooms: "<<bathrooms<<'\n'
                  <<"Distinct valid graph candidates: "<<candidates.size()<<'\n';
         for(const auto& candidate:candidates)
             std::cout<<" - "<<candidate.strategy_name<<": "<<candidate.nodes.size()
