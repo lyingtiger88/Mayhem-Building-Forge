@@ -249,8 +249,7 @@ def main():
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("
-Stopping Mayhem Parametric Lab.")
+        print("\nStopping Mayhem Parametric Lab.")
     finally:
         server.server_close()
 
