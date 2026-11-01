@@ -276,14 +276,18 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
             auto candidate=make_rectangular_candidate(settings,rooms,candidate_order,mask);
             candidate.algorithm=FloorPlanAlgorithm::ResidentialTopologyFirst;
             for(const auto& edge:topology.edges)
-                if(shared_length(candidate.rooms[edge.first].bounds,
-                                 candidate.rooms[edge.second].bounds)<=1e-7)return;
+                if(edge.required&&shared_length(candidate.rooms[edge.first].bounds,
+                                                candidate.rooms[edge.second].bounds)<=1e-7)return;
             for(std::size_t i=0;i<candidate.rooms.size();++i) {
                 const auto& requirement=expanded_requirements[i];
                 const auto& bounds=candidate.rooms[i].bounds;
+                const bool dimensions_fit=
+                    (bounds.width+1e-7>=requirement.minimum_width_m&&
+                     bounds.height+1e-7>=requirement.minimum_depth_m)||
+                    (bounds.width+1e-7>=requirement.minimum_depth_m&&
+                     bounds.height+1e-7>=requirement.minimum_width_m);
                 if(candidate.rooms[i].actual_area_m2+1e-7<requirement.minimum_area_m2||
-                   bounds.width+1e-7<requirement.minimum_width_m||
-                   bounds.height+1e-7<requirement.minimum_depth_m)return;
+                   !dimensions_fit)return;
                 for(std::size_t j=i+1;j<candidate.rooms.size();++j) {
                     if(shared_length(bounds,candidate.rooms[j].bounds)<=1e-7)continue;
                     if(avoided_roles(candidate.rooms[i].role,candidate.rooms[j].role))return;
@@ -294,7 +298,9 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
             for(const auto& edge:topology.edges) {
                 const double length=shared_length(candidate.rooms[edge.first].bounds,
                                                   candidate.rooms[edge.second].bounds);
-                if(edge.required)score+=std::min(length,4.0)*0.35*edge.weight;
+                if(length>1e-7)
+                    score+=std::min(length,4.0)*(edge.required?0.35:0.18)*edge.weight;
+                else if(!edge.required)score-=1.5*edge.weight;
             }
             if(score>best_score+1e-10) {
                 best_score=score;
