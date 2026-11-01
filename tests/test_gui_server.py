@@ -13,7 +13,7 @@ class ParametricLabInputTests(unittest.TestCase):
         self.brief = {
             "width": 20, "depth": 15, "south": 3, "north": 2,
             "east": 1, "west": 2, "floors": 2, "bedrooms": 1,
-            "seed": 42, "bathrooms": 1, "entrance": "south", "profile": "all",
+            "seed": 42, "bathrooms": 1, "entrance": "south", "profile": "all",\n            "living_area": 24, "kitchen_area": 12, "bedroom_area": 14,\n            "bathroom_area": 6, "hallway_area": 8,
         }
 
     def test_gui_loads_external_application_script(self):
@@ -31,6 +31,7 @@ class ParametricLabInputTests(unittest.TestCase):
         self.assertEqual(values["entrance"], "south")
         self.assertEqual(values["bathrooms"], 1)
         self.assertIsInstance(values["bathrooms"], int)
+        self.assertEqual(values["bedroom_area"], 14.0)
 
     def test_rejects_setbacks_that_consume_width(self):
         brief = dict(self.brief, east=10, west=10)
@@ -44,6 +45,11 @@ class ParametricLabInputTests(unittest.TestCase):
 
     def test_rejects_fractional_floor_count(self):
         brief = dict(self.brief, floors=1.5)
+        with self.assertRaises(ValueError):
+            SERVER.parse_brief(brief)
+
+    def test_rejects_room_target_below_minimum(self):
+        brief = dict(self.brief, bathroom_area=3.0)
         with self.assertRaises(ValueError):
             SERVER.parse_brief(brief)
 
