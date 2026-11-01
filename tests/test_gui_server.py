@@ -29,6 +29,8 @@ class ParametricLabInputTests(unittest.TestCase):
         self.assertEqual(values["width"], 20.0)
         self.assertEqual(values["floors"], 2)
         self.assertEqual(values["entrance"], "south")
+        self.assertEqual(values["bathrooms"], 1)
+        self.assertIsInstance(values["bathrooms"], int)
 
     def test_rejects_setbacks_that_consume_width(self):
         brief = dict(self.brief, east=10, west=10)
