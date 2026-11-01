@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
-const fields=["width","depth","south","north","east","west","floors","bedrooms","bathrooms","seed","profile"];
-const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
+const fields=["width","depth","south","north","east","west","entrance","floors","bedrooms","bathrooms","seed","profile"];
+const defaults={width:20,depth:15,south:3,north:2,east:1,west:2,entrance:"south",floors:1,bedrooms:1,bathrooms:1,seed:42,profile:"all"};
 $("reset").addEventListener("click",()=>{for(const k of fields)$(k).value=defaults[k]});
 $("exportBrief").addEventListener("click",()=>{
  const brief={};for(const k of fields)brief[k]=$(k).type==="number"?Number($(k).value):$(k).value;
