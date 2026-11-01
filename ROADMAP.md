@@ -60,7 +60,7 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [x] Build a room-access graph from entrance, interior-door, and open-plan openings; report rooms unreachable from an exterior entrance.
 - [x] Validate access-opening clear widths and enforce entrance-door placement on exterior walls.
 - [x] Validate minimum clear width of hallway zones and construct per-side door approach clearance envelopes; reject approaches that extend outside the served room.
-- [ ] Generate continuous navigable path centerlines, validate turning spaces, and test clearance against furniture footprints once furnishing entities are introduced.
+- [x] Add first-pass procedural 2D furniture symbols to SVG output by room role (bedrooms, living rooms, kitchens, bathrooms, hallways), with deterministic placement and room-size guards.\n- [ ] Replace illustrative furniture symbols with typed furnishing entities, collision/clearance-aware placement, door-swing and circulation validation, and user-editable layouts.\n- [ ] Generate continuous navigable path centerlines, validate turning spaces, and test clearance against furnishing footprints.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
 - [x] Add semantic door/window opening records with stable IDs, dimensions, sill heights, and room ownership.
 - [x] Validate door/open-plan openings on shared walls and windows on exterior walls only.
