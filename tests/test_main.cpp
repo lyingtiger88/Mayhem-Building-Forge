@@ -7,13 +7,14 @@
 #include "mbf/residential_layout.hpp"
 #include "mbf/multi_floor.hpp"
 #include "mbf/building_brief.hpp"
+#include "mbf/topology.hpp"
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
-#include <string>
+#include <string>\n#include <set>
 #include <vector>
 namespace {
 void req(bool b,const std::string&m){if(!b){std::cerr<<"FAILED: "<<m<<'\n';std::exit(EXIT_FAILURE);}}
@@ -246,6 +247,47 @@ void robust_polygon_geometry(){
 }
 
 
+void room_topology_generation(){
+ using namespace mbf;
+ auto brief=make_default_residential_brief();
+ auto candidates=generate_room_topology_candidates(brief);
+ req(candidates.size()>=2U,"default brief generates multiple distinct room topologies");
+ std::set<std::string> signatures;
+ for(const auto& candidate:candidates){
+  std::vector<std::string> diagnostics;
+  req(candidate.valid,"generated room topology is marked valid");
+  req(validate_room_topology(candidate,brief,&diagnostics),"generated topology passes graph validation");
+  req(diagnostics.empty(),"valid topology has no diagnostics");
+  std::string signature;
+  for(const auto& edge:candidate.edges)signature+=std::to_string(edge.first)+"-"+std::to_string(edge.second)+";";
+  signatures.insert(signature);
+  for(const auto& edge:candidate.edges){
+   const auto a=std::find_if(candidate.nodes.begin(),candidate.nodes.end(),[&](const auto& n){return n.id==edge.first;});
+   const auto b=std::find_if(candidate.nodes.begin(),candidate.nodes.end(),[&](const auto& n){return n.id==edge.second;});
+   req(a!=candidate.nodes.end()&&b!=candidate.nodes.end(),"topology edge endpoints exist");
+   req(!(a->role==RoomRole::Living&&b->role==RoomRole::Bathroom)&&
+       !(a->role==RoomRole::Bathroom&&b->role==RoomRole::Living),
+       "topology does not violate avoided living-bathroom adjacency");
+  }
+ }
+ req(signatures.size()==candidates.size(),"topology candidates have distinct adjacency graphs");
+
+ auto multi=brief;
+ multi.rooms[2].count=3;
+ const auto multi_candidates=generate_room_topology_candidates(multi);
+ req(!multi_candidates.empty(),"multiple room instances are expanded into topology nodes");
+ for(const auto& candidate:multi_candidates){
+  const auto bedrooms=std::count_if(candidate.nodes.begin(),candidate.nodes.end(),
+   [](const auto& node){return node.role==RoomRole::Bedroom;});
+  req(bedrooms==3,"topology preserves requested bedroom count");
+  req(validate_room_topology(candidate,multi),"multi-bedroom topology satisfies required role adjacencies");
+ }
+
+ auto impossible=brief;
+ impossible.adjacency.push_back({RoomRole::Living,RoomRole::Bathroom,AdjacencyStrength::Required,1.0});
+ const auto impossible_candidates=generate_room_topology_candidates(impossible);
+ req(impossible_candidates.empty(),"conflicting required and avoided adjacency rules produce no invalid candidates");
+}
 void building_brief_contract(){
  using namespace mbf;
  auto brief=make_default_residential_brief();
@@ -676,4 +718,4 @@ void geometry2d_treemap(){mbf::FloorPlanGenerator g;const auto p=g.generate_tree
 void svg_export(){mbf::FloorPlanGenerator g;const auto p=g.generate_grid_growth({18,12,32,77},sample());const auto result=mbf::build_geometry_2d(p);req(result.valid,"SVG fixture geometry valid");const auto path=std::filesystem::temp_directory_path()/"mayhem_building_forge_test.svg";std::string error;req(mbf::export_geometry_svg(result.geometry,path.string(),&error),"SVG export succeeds");req(std::filesystem::exists(path),"SVG file exists");req(std::filesystem::file_size(path)>100U,"SVG file is not empty");std::filesystem::remove(path);}
 void invalid(){mbf::FloorPlanGenerator g;bool threw=false;try{(void)g.generate_grid_growth({0,10,32,1},sample());}catch(const std::invalid_argument&){threw=true;}req(threw,"invalid dimensions rejected");}
 }
-int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
+int main(){grid();treemap();topology_first();polygon_engine();polygon_offsets_and_setbacks();non_rectangular_regions();robust_polygon_geometry();residential_layout();wide_shallow_residential_variations();room_topology_generation();building_brief_contract();multi_floor_building();residential_variations();physical_circulation_clearances();architectural_validation();boundary_classification();edge_normalization();wall_topology_graph();wall_opening_integration();circulation_access_graph();geometry2d_grid();geometry2d_treemap();svg_export();invalid();std::cout<<"All Mayhem Building Forge tests passed.\n";return EXIT_SUCCESS;}
