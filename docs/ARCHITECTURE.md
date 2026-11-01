@@ -85,6 +85,9 @@ A room starts from a seed cell and expands through free neighbouring cells. This
 ### Weighted rectangular subdivision
 The building footprint is partitioned into rectangular room regions based on target-area weights. It is useful for compact layouts and quick candidate generation. The current implementation is a weighted treemap-style baseline, not a complete architectural planner.
 
+### Wall topology and room access
+The topology-driven generator converts room boundaries into exterior/shared wall segments, adds an entrance opening, default interior doors and exterior windows, then builds a room-access graph. A candidate is exported only when every room is reachable from the entrance through sufficiently wide access openings. The graphical lab displays these results as architectural SVGs with wall/opening overlays. This first pass uses heuristic centered openings and does not yet model door swings, furniture clearances, wall thickness, structural lintels, or accessibility-code compliance.
+
 ### Spatial quality evaluation
 The initial spatial quality evaluator reports normalized daylight-potential, adjacency-based privacy, and circulation-connectivity scores. Daylight potential is estimated from room frontage on the exterior envelope and role-based weighting; it is not a solar/daylight simulation and does not place windows. Privacy penalties are applied to selected public/private room adjacencies. Circulation is checked against realized room adjacency connectivity. These explainable heuristic scores rank candidates but do not establish regulatory compliance.
 
