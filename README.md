@@ -4,7 +4,7 @@
 
 Mayhem Building Forge (MBF) is planned as a hybrid desktop authoring tool and Unreal Engine integration. Its long-term purpose is to generate believable buildings at scale while keeping architectural rules and generation logic independent of any one rendering engine.
 
-> **Status: Early foundation / pre-alpha.** The repository contains a C++20 architectural geometry core, an initial rule-based two-bedroom residential planner, candidate profiles, geometric validation, a repeated-floor data model, and a first parameter-driven command-line house generator. The desktop interface, 3D mesh pipeline, furnishing system, and Unreal integration are not implemented yet.
+> **Status: Early foundation / pre-alpha.** The repository contains a C++20 architectural geometry core, an initial rule-based one-bedroom residential planner, candidate profiles, geometric validation, a repeated-floor data model, and a first parameter-driven command-line house generator. The desktop interface, 3D mesh pipeline, furnishing system, and Unreal integration are not implemented yet.
 
 [Documentation Index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Getting Started](docs/GETTING_STARTED.md) · [User Guide](docs/USER_GUIDE.md) · [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md) · [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md) · [Reference Analysis](docs/REFERENCE_ANALYSIS.md) · [Contributing](CONTRIBUTING.md)
 
@@ -79,7 +79,9 @@ The current C++20 core provides:
 - Weighted rectangular / treemap-style subdivision.
 - Room-cell ownership and room adjacency output.
 - Polygon geometry, concave region and courtyard partition validation, polygon offsets, and uniform lot setback calculations.
-- A deterministic five-room / two-bedroom residential prototype with south-side entrance and three zoning profiles.
+- A deterministic five-space / one-bedroom residential prototype with south-side entrance and three zoning profiles.
+- A versioned parametric Building Brief contract for site dimensions, four-side setbacks, floor count/height, room schedules, target/minimum areas, priorities, and adjacency rules.
+- Input feasibility validation and explicit compatibility diagnostics against the currently implemented residential solver.
 - Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.
 - Candidate generation and ranking for supported residential profiles.
 - Repeated-floor building data and preliminary stair/elevator core footprint validation.
