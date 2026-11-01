@@ -66,9 +66,9 @@ Supported inputs in this prototype:
 
 Current limitation: the planner creates a five-space, one-bedroom residential typology. The Building Brief API can validate room schedules and adjacency requests, but the layout solver does not yet generate arbitrary room counts or custom room schedules. Site setbacks are validated and applied; local zoning/code rules, orientation variants, and 3D meshes are not yet implemented. Multi-floor output currently repeats the same validated floor plan.
 
-Run `mbf_build_house --help` for the complete command reference.
+Run `mbf_build_house --help` for the complete command reference.\n\n## 6. Open the graphical Parametric Lab\n\nOn Windows, run:\n\n```powershell\n.\\scripts\\run_parametric_lab.ps1\n```\n\nThen open `http://127.0.0.1:8765`. The browser UI invokes the native C++ generator through a local Python server. See [Parametric Lab Guide](PARAMETRIC_LAB.md).
 
-## 6. Run the sample
+## 7. Run the sample
 
 Windows Visual Studio generator:
 
@@ -80,7 +80,7 @@ Linux or single-configuration build:
 
 The sample generates a seeded floor plan and prints each room's area, cell count, and number of room adjacencies.
 
-## 7. Modify the sample
+## 8. Modify the sample
 
 Edit examples/generate_sample.cpp to change:
 - building width and depth in metres;
@@ -90,7 +90,7 @@ Edit examples/generate_sample.cpp to change:
 
 Rebuild and run again. Current room areas are approximate weighted shares; minimum room dimensions and architectural circulation rules are not enforced yet.
 
-## 8. Further reading
+## 9. Further reading
 
 - Product capabilities and limitations: README.md
 - Technical design: ARCHITECTURE.md
