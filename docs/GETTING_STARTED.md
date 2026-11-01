@@ -66,7 +66,7 @@ Supported inputs in this prototype:
 
 Current limitation: the planner creates a five-space, one-bedroom residential typology. The Building Brief API can validate room schedules and adjacency requests, but the layout solver does not yet generate arbitrary room counts or custom room schedules. Site setbacks are validated and applied; local zoning/code rules, orientation variants, and 3D meshes are not yet implemented. Multi-floor output currently repeats the same validated floor plan.
 
-Run `mbf_build_house --help` for the complete command reference.\n\n## 6. Open the graphical Parametric Lab\n\nOn Windows, run:\n\n```powershell\n.\\scripts\\run_parametric_lab.ps1\n```\n\nThen open `http://127.0.0.1:8765`. The browser UI invokes the native C++ generator through a local Python server. See [Parametric Lab Guide](PARAMETRIC_LAB.md).
+Run `mbf_build_house --help` for the complete command reference.\n\nThe initial room-topology graph generator can also be run independently:\n\n```powershell\n.\\build\\Release\\mbf_topology_preview.exe --bedrooms 3 --output topologies.svg\n```\n\nThis exports relationship graphs for inspection. It does not yet solve those graphs into room polygons.\n\n## 6. Open the graphical Parametric Lab\n\nOn Windows, run:\n\n```powershell\n.\\scripts\\run_parametric_lab.ps1\n```\n\nThen open `http://127.0.0.1:8765`. The browser UI invokes the native C++ generator through a local Python server. See [Parametric Lab Guide](PARAMETRIC_LAB.md).
 
 ## 7. Run the sample
 
