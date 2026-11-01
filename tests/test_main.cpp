@@ -330,8 +330,19 @@ void topology_to_geometry_solver(){
    auto wall_topology=build_wall_topology(geometry.geometry);
    req(wall_topology.valid&&!wall_topology.walls.empty(),"wall topology is built from room boundaries");
    OpeningSettings2D opening_settings;
-   const auto openings=generate_default_openings(wall_topology,plan.entrance,opening_settings);
-   req(!openings.empty(),"default doors and windows are generated");
+   const auto openings=generate_residential_openings(wall_topology,plan,opening_settings);
+   req(!openings.empty(),"role-aware doors and windows are generated");
+   const auto has_open_plan=std::any_of(wall_topology.openings.begin(),wall_topology.openings.end(),
+       [](const WallOpening2D& opening){return opening.kind==OpeningKind2D::OpenPlan;});
+   req(has_open_plan,"living/public room connections can use open-plan openings");
+   const auto hallway_window=std::any_of(wall_topology.openings.begin(),wall_topology.openings.end(),
+       [&](const WallOpening2D& opening){
+           if(opening.kind!=OpeningKind2D::Window)return false;
+           const auto room=std::find_if(plan.rooms.begin(),plan.rooms.end(),
+               [&](const RoomRegion& item){return item.id==opening.room_a;});
+           return room!=plan.rooms.end()&&(room->role==RoomRole::Hallway||room->role==RoomRole::Circulation);
+       });
+   req(!hallway_window,"circulation spaces do not receive default daylight windows");
    std::vector<RoomId> room_ids;
    for(const auto& room:plan.rooms)room_ids.push_back(room.id);
    const auto access=build_circulation_graph(wall_topology,room_ids,0.8);
