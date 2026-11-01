@@ -79,13 +79,17 @@ The current C++20 core provides:
 - Weighted rectangular / treemap-style subdivision.
 - Room-cell ownership and room adjacency output.
 - Polygon geometry, concave region and courtyard partition validation, polygon offsets, and uniform lot setback calculations.
-- A legacy deterministic five-space / one-bedroom residential prototype with three zoning profiles.\n- An experimental topology-driven solver with three adjacency graph strategies, configurable 1–4 bedroom and 1–4 bathroom schedules, and selectable entrance facade.
+- A legacy deterministic five-space / one-bedroom residential prototype with three zoning profiles.
+- An experimental topology-driven solver with three adjacency graph strategies, configurable 1–4 bedroom and 1–4 bathroom schedules, and selectable entrance facade.
 - A versioned parametric Building Brief contract for site dimensions, four-side setbacks, floor count/height, room schedules, target/minimum areas, priorities, and adjacency rules.
 - Input feasibility validation and explicit compatibility diagnostics against the currently implemented residential solver.
-- Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.\n- Role-aware exterior windows, interior doors, and open-plan connections; connected room access is required before topology-driven plan export.\n- Architectural SVG output with wall/opening overlays and normalized daylight-potential, privacy, circulation, and overall quality scores.
+- Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.
+- Role-aware exterior windows, interior doors, and open-plan connections; connected room access is required before topology-driven plan export.
+- Architectural SVG output with wall/opening overlays and normalized daylight-potential, privacy, circulation, and overall quality scores.
 - Candidate generation and ranking for supported residential profiles.
 - Repeated-floor building data and preliminary stair/elevator core footprint validation.
-- A parameter-driven `mbf_build_house` legacy CLI and `mbf_generate_topology_house` experimental CLI.\n- A local browser-based Parametric Lab with JSON brief import/export, candidate ranking, quality metrics, and SVG downloads.
+- A parameter-driven `mbf_build_house` legacy CLI and `mbf_generate_topology_house` experimental CLI.
+- A local browser-based Parametric Lab with JSON brief import/export, candidate ranking, quality metrics, and SVG downloads.
 - CMake build configuration, sample executable, and automated tests.
 - GitHub Actions build-and-test workflow.
 
