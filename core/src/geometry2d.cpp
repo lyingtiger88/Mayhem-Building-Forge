@@ -526,6 +526,28 @@ std::vector<std::uint64_t> generate_residential_openings(
             if(role==RoomRole::Hallway||role==RoomRole::Circulation||role==RoomRole::Service)
                 continue;
         }
+        if(opening.kind==OpeningKind2D::Window) {
+            const auto role=role_for(opening.room_a);
+            double target_width=1.2;
+            if(role==RoomRole::Living) {
+                target_width=1.8;opening.sill_height_m=0.6;opening.height_m=1.5;
+            } else if(role==RoomRole::Bedroom) {
+                target_width=1.5;opening.sill_height_m=0.9;opening.height_m=1.2;
+            } else if(role==RoomRole::Kitchen) {
+                target_width=1.2;opening.sill_height_m=1.0;opening.height_m=1.0;
+            } else if(role==RoomRole::Bathroom) {
+                target_width=0.6;opening.sill_height_m=1.5;opening.height_m=0.6;
+            }
+            const auto wall=std::find_if(topology.walls.begin(),topology.walls.end(),
+                [&](const BoundarySegment2D& item){return item.id==opening.wall_id;});
+            if(wall!=topology.walls.end()) {
+                const double available=wall->length_m-2.0*settings.minimum_end_clearance_m;
+                if(available>=0.5) {
+                    opening.width_m=std::min(target_width,available);
+                    opening.offset_m=(wall->length_m-opening.width_m)*0.5;
+                }
+            }
+        }
         if(opening.kind==OpeningKind2D::InteriorDoor) {
             const auto a=role_for(opening.room_a),b=role_for(opening.room_b);
             const bool open_plan_pair=
@@ -533,7 +555,18 @@ std::vector<std::uint64_t> generate_residential_openings(
                 (b==RoomRole::Living&&(a==RoomRole::Kitchen||a==RoomRole::Hallway))||
                 (a==RoomRole::Public&&b==RoomRole::Circulation)||
                 (b==RoomRole::Public&&a==RoomRole::Circulation);
-            if(open_plan_pair)opening.kind=OpeningKind2D::OpenPlan;
+            if(open_plan_pair) {
+                opening.kind=OpeningKind2D::OpenPlan;
+                const auto wall=std::find_if(topology.walls.begin(),topology.walls.end(),
+                    [&](const BoundarySegment2D& item){return item.id==opening.wall_id;});
+                if(wall!=topology.walls.end()) {
+                    const double available=wall->length_m-2.0*settings.minimum_end_clearance_m;
+                    if(available>=1.2) {
+                        opening.width_m=std::min(1.5,available);
+                        opening.offset_m=(wall->length_m-opening.width_m)*0.5;
+                    }
+                }
+            }
         }
         ids.push_back(opening.id);
         retained.push_back(opening);
