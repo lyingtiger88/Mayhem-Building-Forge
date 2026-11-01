@@ -8,7 +8,7 @@ The planned clients are:
 - **Desktop authoring application:** project setup, building briefs, 2D/3D preview, editing, generation controls, and asset-library management.
 - **Unreal Engine integration:** editor import/baking, runtime generation hooks, world placement, collision/navigation setup, and streaming integration.
 
-The desktop application and Unreal integration are product targets. Neither is implemented in the current repository baseline.
+The full desktop authoring application and Unreal integration remain planned. A lightweight browser-based Parametric Lab is implemented as a developer test bench; it invokes the native C++ CLI but does not yet provide full room editing or a persistent project workflow.
 
 ## 2. High-level component boundaries
 
@@ -47,7 +47,7 @@ The desktop application and Unreal integration are product targets. Neither is i
           +---- Desktop preview
           +---- Unreal Engine adapter
 
-Only the initial floor-plan algorithm and basic validation portions are present in code today. The other boxes describe the intended architecture.
+The current repository includes geometry primitives, a constrained five-space residential prototype, a Building Brief validation contract, and the local Parametric Lab. General topology generation, arbitrary room-schedule solving, complete architectural validation, 3D generation, and the Unreal adapter remain planned.
 
 ## 3. Core data model
 
@@ -155,7 +155,7 @@ Not implemented:
 - multi-floor building model;
 - 3D structural and facade generation;
 - complete furnishing;
-- desktop application;
+- full desktop authoring application (the limited browser-based Parametric Lab is available);
 - Unreal plugin;
 - streaming and multiplayer.
 
