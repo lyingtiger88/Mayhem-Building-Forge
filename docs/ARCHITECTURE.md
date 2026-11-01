@@ -85,6 +85,9 @@ A room starts from a seed cell and expands through free neighbouring cells. This
 ### Weighted rectangular subdivision
 The building footprint is partitioned into rectangular room regions based on target-area weights. It is useful for compact layouts and quick candidate generation. The current implementation is a weighted treemap-style baseline, not a complete architectural planner.
 
+### Spatial quality evaluation
+The initial spatial quality evaluator reports normalized daylight-potential, adjacency-based privacy, and circulation-connectivity scores. Daylight potential is estimated from room frontage on the exterior envelope and role-based weighting; it is not a solar/daylight simulation and does not place windows. Privacy penalties are applied to selected public/private room adjacencies. Circulation is checked against realized room adjacency connectivity. These explainable heuristic scores rank candidates but do not establish regulatory compliance.
+
 ### Rule-based orchestration
 Planned orchestration will select and combine algorithms according to typology and constraints. For example, a vertical circulation core can be reserved before room allocation; wet rooms can be clustered; bedrooms can be kept away from public entrances; corridors and access requirements can be checked after candidate generation.
 
