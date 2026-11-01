@@ -47,11 +47,11 @@ if(MBF_BUILD_EXAMPLES)
     target_link_libraries(mbf_generate_topology_house PRIVATE MBF::Core)
     if(MBF_BUILD_TESTS)
         add_test(NAME mbf_topology_preview_smoke
-            COMMAND mbf_topology_preview --bedrooms 2
+            COMMAND mbf_topology_preview --bedrooms 2 --bathrooms 2
                     --output ${CMAKE_CURRENT_BINARY_DIR}/topology_smoke.svg)
         add_test(NAME mbf_topology_house_smoke
             COMMAND mbf_generate_topology_house --width 18 --depth 12
-                    --bedrooms 2 --output-prefix ${CMAKE_CURRENT_BINARY_DIR}/topology_house_smoke)
+                    --bedrooms 2 --bathrooms 2 --output-prefix ${CMAKE_CURRENT_BINARY_DIR}/topology_house_smoke)
         add_test(NAME mbf_topology_house_rejects_unimplemented_multifloor
             COMMAND mbf_generate_topology_house --floors 2)
         set_tests_properties(mbf_topology_house_rejects_unimplemented_multifloor
