@@ -16,6 +16,7 @@ int main(int argc,char** argv) {
     using namespace mbf;
     try {
         double width=18.0,depth=12.0;
+        double living_area=24.0,kitchen_area=12.0,bedroom_area=14.0,bathroom_area=6.0,hallway_area=8.0;
         double south=0.0,north=0.0,east=0.0,west=0.0;
         std::uint32_t bedrooms=1,bathrooms=1,floors=1;
         EntranceSide entrance_side=EntranceSide::South;
@@ -26,7 +27,7 @@ int main(int argc,char** argv) {
             if(arg=="--help") {
                 std::cout<<"Usage: mbf_generate_topology_house [--width M] [--depth M] "
                          <<"[--setback-south M] [--setback-north M] [--setback-east M] "
-                         <<"[--setback-west M] [--bedrooms N] [--bathrooms N] [--entrance-side south|north|east|west] [--floors N] [--seed N] [--output-prefix PATH]\n";
+                         <<"[--setback-west M] [--bedrooms N] [--bathrooms N] [--living-area M2] [--kitchen-area M2] [--bedroom-area M2] [--bathroom-area M2] [--hallway-area M2] [--entrance-side south|north|east|west] [--floors N] [--seed N] [--output-prefix PATH]\n";
                 return EXIT_SUCCESS;
             }
             if(i+1>=argc)throw std::invalid_argument("Missing value after "+arg);
@@ -45,7 +46,12 @@ int main(int argc,char** argv) {
                 const auto n=std::stoul(value);
                 if(n<1U||n>4U)throw std::invalid_argument("--bathrooms must be between 1 and 4.");
                 bathrooms=static_cast<std::uint32_t>(n);
-            } else if(arg=="--entrance-side") {
+            } else if(arg=="--living-area")living_area=std::stod(value);
+            else if(arg=="--kitchen-area")kitchen_area=std::stod(value);
+            else if(arg=="--bedroom-area")bedroom_area=std::stod(value);
+            else if(arg=="--bathroom-area")bathroom_area=std::stod(value);
+            else if(arg=="--hallway-area")hallway_area=std::stod(value);
+            else if(arg=="--entrance-side") {
                 if(value=="south")entrance_side=EntranceSide::South;
                 else if(value=="north")entrance_side=EntranceSide::North;
                 else if(value=="east")entrance_side=EntranceSide::East;
@@ -63,6 +69,9 @@ int main(int argc,char** argv) {
         brief.site_width_m=width;brief.site_depth_m=depth;
         brief.setback_south_m=south;brief.setback_north_m=north;
         brief.setback_east_m=east;brief.setback_west_m=west;
+        brief.rooms[0].target_area_m2=living_area;brief.rooms[1].target_area_m2=kitchen_area;
+        brief.rooms[2].target_area_m2=bedroom_area;brief.rooms[3].target_area_m2=bathroom_area;
+        brief.rooms[4].target_area_m2=hallway_area;
         brief.rooms[2].count=bedrooms;brief.rooms[3].count=bathrooms;brief.floor_count=floors;brief.entrance_side=entrance_side;brief.seed=seed;
         const auto brief_check=validate_building_brief(brief);
         if(!brief_check.valid) {
