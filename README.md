@@ -143,18 +143,35 @@ Requirements: CMake 3.20+, a C++20 compiler (MSVC 2022, GCC, or Clang), and Git.
 
 For troubleshooting and expected output, see docs/GETTING_STARTED.md.
 
-## 7. Research reference and attribution
+
+## 6. Parametric Lab (local graphical test bench)
+
+After building the native generator, launch the local browser-based GUI on Windows:
+
+    .\scripts\run_parametric_lab.ps1
+
+Open http://127.0.0.1:8765 in your browser. The interface sends the Building Brief to the local Python standard-library server, which invokes the actual C++ `mbf_build_house` executable and returns its SVG output. It does not use a separate JavaScript floor-plan generator.
+
+The Lab currently exposes site dimensions, four setbacks, floor count, requested bedroom count, seed, and the three implemented residential profiles. Select **Generate all current profiles** to compare the Balanced, Open Living, and Privacy First candidates.
+
+Requirements: Python 3 and a successful CMake build. The server binds only to 127.0.0.1 and has no external service dependency.
+
+**Current engine limitation:** the underlying residential solver still supports one bedroom and five spaces. The GUI makes unsupported briefs and generation diagnostics visible; it does not imply arbitrary room schedules are already solved. The current profile variants are not yet independent spatial topologies.
+
+For details, see [Parametric Lab Guide](docs/PARAMETRIC_LAB.md).
+
+## 8. Research reference and attribution
 
 The initial algorithms are informed by [Wojciech Trybus' Procedural-Building-Generator](https://github.com/wojtryb/Procedural-Building-Generator), an MIT-licensed Blender project. We studied its grid-based room growth, treemap subdivision, adjacency/opening concepts, and plan-quality ideas.
 
 MBF's current core is an independent C++ implementation; it does not embed the upstream Blender add-on. See docs/REFERENCE_ANALYSIS.md and third_party/NOTICE.md.
 
-## 8. Project status and contribution
+## 9. Project status and contribution
 
 This project is in active early development. The immediate engineering priority is to make floor plans architecturally valid — not merely visually interesting — before starting the 3D pipeline.
 
 Contributions are welcome once scoped through an issue or discussion. Read CONTRIBUTING.md before submitting code.
 
-## 9. License
+## 10. License
 
 The MBF code is distributed under the MIT License. Third-party attributions and license texts are in third_party/.
