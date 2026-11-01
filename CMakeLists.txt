@@ -52,5 +52,9 @@ if(MBF_BUILD_EXAMPLES)
         add_test(NAME mbf_topology_house_smoke
             COMMAND mbf_generate_topology_house --width 18 --depth 12
                     --bedrooms 2 --output-prefix ${CMAKE_CURRENT_BINARY_DIR}/topology_house_smoke)
+        add_test(NAME mbf_topology_house_rejects_unimplemented_multifloor
+            COMMAND mbf_generate_topology_house --floors 2)
+        set_tests_properties(mbf_topology_house_rejects_unimplemented_multifloor
+            PROPERTIES WILL_FAIL TRUE)
     endif()
 endif()
