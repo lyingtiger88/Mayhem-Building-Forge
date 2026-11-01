@@ -13,7 +13,9 @@ class ParametricLabInputTests(unittest.TestCase):
         self.brief = {
             "width": 20, "depth": 15, "south": 3, "north": 2,
             "east": 1, "west": 2, "floors": 2, "bedrooms": 1,
-            "seed": 42, "bathrooms": 1, "entrance": "south", "profile": "all",\n            "living_area": 24, "kitchen_area": 12, "bedroom_area": 14,\n            "bathroom_area": 6, "hallway_area": 8,
+            "seed": 42, "bathrooms": 1, "entrance": "south", "profile": "all",
+            "living_area": 24, "kitchen_area": 12, "bedroom_area": 14,
+            "bathroom_area": 6, "hallway_area": 8,
         }
 
     def test_gui_loads_external_application_script(self):
