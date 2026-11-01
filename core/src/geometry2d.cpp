@@ -819,11 +819,17 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         }
         if(count==0U)continue;
         cx/=static_cast<double>(count);cy/=static_cast<double>(count);
-        svg<<"<text x=\""<<cx<<"\" y=\""<<cy
-           <<"\" font-family=\"Arial,sans-serif\" font-size=\"0.31\" font-weight=\"600\" text-anchor=\"middle\" "
-           <<"fill=\"#17202a\" stroke=\"#ffffff\" stroke-width=\"0.025\" paint-order=\"stroke\">";
+        double area_m2=0.0;
+        for(const auto& ring:room.rings)area_m2+=ring.signed_area_m2();
+        // Restore upright orientation after the drawing-layer Y-axis inversion.
+        svg<<"<g transform=\"translate("<<cx<<" "<<cy<<") scale(1 -1)\">\n";
+        svg<<"<text x=\"0\" y=\"-0.06\" font-family=\"Arial,sans-serif\" font-size=\"0.30\" "
+           <<"font-weight=\"700\" text-anchor=\"middle\" fill=\"#24364d\">";
         append_svg_escape(svg,room.name);
-        svg<<"</text>\n";
+        svg<<"</text>\n"
+           <<"<text x=\"0\" y=\"0.28\" font-family=\"Arial,sans-serif\" font-size=\"0.22\" "
+           <<"text-anchor=\"middle\" fill=\"#62758a\">"
+           <<std::round(std::abs(area_m2)*10.0)/10.0<<" m2</text></g>\n";
     }
     svg<<"</g>\n"
        <<"<g font-family=\"Arial,sans-serif\" font-size=\"11\" fill=\"#334155\">"
