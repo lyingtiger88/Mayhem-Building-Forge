@@ -5,8 +5,8 @@ Welcome to the Mayhem Building Forge documentation.
 ## Start here
 1. [Project overview](../README.md) — product vision, current capabilities, build status, and repository layout.
 2. [Getting started](GETTING_STARTED.md) — prerequisites, clone, configure, build, tests, and sample execution.
-3. [User guide](USER_GUIDE.md) — current C++ generator workflow and output concepts.
-4. [Roadmap](../ROADMAP.md) — milestones, status, priorities, and completion criteria.
+3. [Parametric Lab](PARAMETRIC_LAB.md) — local graphical test bench for the native C++ generator.\n4. [User guide](USER_GUIDE.md) — current C++ generator workflow and output concepts.
+5. [Roadmap](../ROADMAP.md) — milestones, status, priorities, and completion criteria.
 
 ## Technical design
 - [System architecture](ARCHITECTURE.md) — core boundaries, hybrid generation, validation, determinism, and integrations.
