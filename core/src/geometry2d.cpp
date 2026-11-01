@@ -813,14 +813,20 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
             furniture_rect(bx,by,bw,bh,"#f8f3e9","#8d806d",0.09);
             furniture_rect(bx+0.08,by+0.08,bw*0.43,bh*0.25,"#ffffff","#c5b9a8",0.07);
             furniture_rect(bx+bw*0.53,by+0.08,bw*0.39,bh*0.25,"#ffffff","#c5b9a8",0.07);
-            furniture_rect(bx-0.32,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
-            furniture_rect(bx+bw+0.08,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
+            if(w>=2.8) {
+                furniture_rect(min_x+pad,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
+                furniture_rect(max_x-pad-0.24,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
+            }
             furniture_rect(min_x+pad,max_y-pad-0.48,std::min(1.35,w-2*pad),0.42,"#c9b79d","#8d806d",0.035);
         } else if(name.find("Living")!=std::string::npos) {
             const double sw=std::min(2.25,w-2*pad),sh=0.82;
             furniture_rect(min_x+pad,max_y-pad-sh,sw,sh,"#d8c6b2","#8f7967",0.14);
             furniture_line(min_x+pad+0.12,max_y-pad-sh+0.28,min_x+pad+sw-0.12,max_y-pad-sh+0.28,"#a18a76");
-            furniture_rect(min_x+(w-1.0)*0.5,min_y+pad+0.78,1.0,0.58,"#c6a77f","#8f7967",0.07);
+            const double tx=min_x+(w-1.0)*0.5,ty=min_y+pad+0.78;
+            furniture_rect(tx,ty,1.0,0.58,"#c6a77f","#8f7967",0.07);
+            furniture_rect(tx+0.36,ty+0.18,0.28,0.22,"#eee4d4","#8f7967",0.035);
+            furniture_rect(tx-0.42,ty+0.08,0.30,0.42,"#c6b29a","#8f7967",0.08);
+            furniture_rect(tx+1.12,ty+0.08,0.30,0.42,"#c6b29a","#8f7967",0.08);
             furniture_rect(min_x+(w-1.55)*0.5,min_y+pad,1.55,0.20,"#8d9aa5","#657483",0.025);
         } else if(name.find("Kitchen")!=std::string::npos) {
             const double counter=0.58;
