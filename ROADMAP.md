@@ -34,12 +34,12 @@ This roadmap distinguishes implemented code from planned capabilities. A feature
 This milestone turns a user brief into multiple architecturally credible, inspectable 2D floor-plan candidates. It is the prerequisite for reliable 3D extrusion. The current fixed five-space residential layout is only a prototype and does not satisfy this milestone's exit criteria.
 
 ### Milestone 1 execution sequence
-1. **M1.1 Generative topology engine:** arbitrary room schedules and genuinely different adjacency/circulation graphs. Initial graph-candidate generation and validation are now implemented; geometric realization and integration into the user-facing planner remain open.
+1. **M1.1 Generative topology engine:** arbitrary room schedules and genuinely different adjacency/circulation graphs. Initial graph-candidate generation, validation, and first geometric realization are implemented and connected to the Parametric Lab; arbitrary room schedules remain open.
 2. **M1.2 Generalized geometric solver:** solve room polygons from topology and dimensions. An initial rectangular guillotine solver now realizes supported graph candidates; polygonal/non-rectangular realization and broader schedules remain open.
 3. **M1.3 Architectural intelligence:** daylight, privacy, access, circulation, and room-function scoring. Initial normalized daylight-potential, adjacency-privacy, and circulation scores are implemented; actual sun/daylight simulation and code-based access checks remain open.
-4. **M1.4 Walls and openings:** consistent walls, doors, windows, and navigable circulation. Existing boundary classification/opening primitives are now wired into topology-driven candidate export with access-graph validation; robust door placement and wall-thickness/junction rules remain open.
-5. **M1.5 Candidate optimization:** generate, validate, rank, and de-duplicate distinct designs.
-6. **M1.6 Visual validation:** inspect and compare candidates in the Parametric Lab, then complete regression and stress testing.
+4. **M1.4 Walls and openings:** consistent walls, doors, windows, and navigable circulation. The topology-driven export now creates role-aware openings and validates reachability; robust door swings, wall thickness, and junction rules remain open.
+5. **M1.5 Candidate optimization:** initial candidate ranking by normalized spatial quality is implemented; broader multi-objective optimization and geometric de-duplication remain open.
+6. **M1.6 Visual validation:** a local graphical test bench now imports/exports briefs, downloads SVG plans, and compares ranked candidates; live editing, project persistence, and stress testing remain open.
 
 The local browser-based Parametric Lab is an implemented developer test bench, not the finished desktop authoring application. It invokes the native C++ executable and must remain synchronized with its supported inputs.
 
@@ -52,7 +52,7 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [x] Normalize collinear room edges, split partial overlaps at shared endpoints, deduplicate shared wall pieces, merge compatible adjacent segments, and discard zero-length edges. (Further grid-growth edge-case coverage remains pending.)
 - [x] Classify exact matching room boundaries as exterior walls or shared internal walls.
 - [x] Split wall segments around modeled door/window openings and retain explicit opening-gap records.
-- [ ] Distinguish open circulation boundaries and non-door open-plan connections.
+- [x] Represent non-door open-plan connections separately from hinged interior doors in the wall-opening model.
 - [ ] Add robust junction resolution for overlapping multi-room boundaries and non-manifold cases.
 - [x] Calculate boundary lengths and preserve room-to-room ownership for exact shared edges.
 - [x] Build a deterministic wall-topology graph with unique junction nodes and wall connectivity.
@@ -85,21 +85,21 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [ ] Add robust concave offset cleanup, round/bevel joins, and per-edge/front-side setbacks; support courtyard wall offsets and narrow-neck collapse handling.
 - [x] Add three deterministic residential profile variants for the initial five-space prototype; current variants alter zoning ratios but retain the same room graph/topology.
 - [x] Add a local browser-based Parametric Lab that invokes the native C++ generator, previews SVG candidates, compares current profiles, and reports diagnostics.
-- [ ] Upgrade the Parametric Lab into a full authoring interface with editable room schedules, live plan editing, and richer candidate comparison.
+- [x] Add bedroom/bathroom count controls, entrance-side selection, JSON brief import/export, ranked candidate comparison, quality metrics, and SVG downloads.\n- [ ] Upgrade the Parametric Lab into a full authoring interface with arbitrary room schedules, live plan editing, and persistent project management.
 - [x] Add an engine-neutral room-topology candidate generator with circulation-hub, public/private-spine, and compact-linear graph strategies; validate required/avoided adjacency and graph connectivity. (Graph layer only; not yet converted into floor-plan geometry.)
 - [ ] Expand profiles into geometrically realized, genuinely different room graphs, including optional vestibules and alternative corridor topologies.
-- [ ] Improve quality scoring with daylight, privacy, adjacency strength, entrance sightlines, and circulation efficiency.
+- [x] Add initial normalized daylight-potential, privacy, circulation, and overall scores; rank topology-derived candidates by overall score.\n- [ ] Improve quality scoring with solar exposure, entrance sightlines, room-level adjacency strength, and detailed circulation efficiency.
 - [x] Add a command-line parametric house-generation workflow accepting footprint dimensions, floor count, floor height, profile, seed, and SVG output path.
 - [x] Validate generated candidates and physical circulation before selecting/exporting a plan.
-- [ ] Expand the building brief to accept arbitrary room schedules (room types/counts, target areas, priorities, required adjacencies, and exclusions).
+- [ ] Expand the building brief UI/CLI to arbitrary room types, per-room target areas, priorities, and user-authored adjacency/exclusion rules. The current GUI supports 1–4 bedrooms and 1–4 bathrooms in the default residential schedule.
 - [x] Expose rectangular site dimensions and four-side setbacks in the CLI and Parametric Lab.
-- [ ] Add arbitrary polygonal plots, orientation, configurable access side, accessibility targets, and local rule profiles to the user-facing brief.
+- [x] Add configurable entrance facade (south/north/east/west) to the topology-driven brief.\n- [ ] Add arbitrary polygonal plots, site orientation, accessibility targets, and local rule profiles to the user-facing brief.
 - [x] Add an initial topology-constrained rectangular partition solver that realizes required graph adjacencies, respects avoided role pairs, and enforces per-room minimum area and dimensions.
 - [ ] Generalize topology-to-geometry solving beyond rectangular guillotine partitions and the current default residential brief.
 
 **Exit criteria:** A user-defined room schedule and site brief produce multiple genuinely different candidates. Every accepted candidate has valid room polygons, correct wall/opening ownership, connected and sufficiently wide circulation, no overlap/gaps, and documented diagnostics. Candidate scoring includes room dimensions, adjacency, privacy, daylight potential, and circulation. The Parametric Lab can inspect and compare candidates. Automated tests cover supported typologies and pathological geometry. No 3D milestone begins until these criteria are met.
 
-The polygon engine and region validator provide reusable geometry foundations. The current user-facing residential generator remains a fixed five-space, one-bedroom rectangular zoning prototype. Its three profiles do not yet generate independent room graphs. The Parametric Lab now provides a browser UI over the actual native generator, but it is only a test harness. Arbitrary room schedules, genuine topology diversity, full circulation, daylight/privacy evaluation, and complete architectural validation remain open work. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
+The polygon engine and region validator provide reusable geometry foundations. The legacy profile generator remains a fixed five-space, one-bedroom prototype. Alongside it, the topology-driven generator now supports 1–4 bedrooms and 1–4 bathrooms, three distinct adjacency-graph strategies, a first rectangular geometry solver, facade-aware entrance placement, role-aware doors/windows, room-access validation, and heuristic daylight/privacy/circulation scoring. The Parametric Lab invokes these native executables and displays ranked SVG candidates. Arbitrary room schedules, non-rectangular geometric realization, physical daylight simulation, door swings, structural validation, and full desktop authoring remain open. Grid-growth polygon extraction remains available for internal experiments. Detailed specification: [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md).
 
 ## Milestone 2 — Multi-floor building model
 **Status: In progress — initial engine-neutral floor-stack contract and vertical-core validation implemented**
