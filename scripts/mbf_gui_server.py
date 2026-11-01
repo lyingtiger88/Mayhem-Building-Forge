@@ -29,6 +29,8 @@ ENTRANCE_SIDES = ("south", "north", "east", "west")
 def parse_brief(payload):
     if not isinstance(payload, dict):
         raise ValueError("Request body must be a JSON object.")
+    if payload.get("schema_version", 1) != 1:
+        raise ValueError("Unsupported Building Brief schema version.")
     values = {}
     for key, (low, high) in NUMERIC_RANGES.items():
         value = payload.get(key)
