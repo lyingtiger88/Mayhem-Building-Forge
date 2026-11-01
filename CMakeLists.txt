@@ -12,6 +12,7 @@ add_library(mbf_core
     core/src/polygon_offset.cpp
     core/src/residential_layout.cpp
     core/src/multi_floor.cpp
+    core/src/building_brief.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
 target_include_directories(mbf_core PUBLIC core/include)
