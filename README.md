@@ -4,7 +4,7 @@
 
 Mayhem Building Forge (MBF) is planned as a hybrid desktop authoring tool and Unreal Engine integration. Its long-term purpose is to generate believable buildings at scale while keeping architectural rules and generation logic independent of any one rendering engine.
 
-> **Status: Early foundation / pre-alpha.** The repository contains a C++20 architectural geometry core, an initial rule-based one-bedroom residential planner, candidate profiles, geometric validation, a repeated-floor data model, and a first parameter-driven command-line house generator. The desktop interface, 3D mesh pipeline, furnishing system, and Unreal integration are not implemented yet.
+> **Status: Early foundation / pre-alpha.** The repository contains a C++20 architectural geometry core, a legacy one-bedroom prototype, an experimental topology-driven rectangular residential solver (1–4 bedrooms and 1–4 bathrooms), role-aware wall/opening generation, heuristic spatial quality scoring, and a local browser-based Parametric Lab. A full desktop editor, 3D mesh pipeline, furnishing system, and Unreal integration remain future work.
 
 [Documentation Index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Getting Started](docs/GETTING_STARTED.md) · [User Guide](docs/USER_GUIDE.md) · [2D Geometry Plan](docs/2D_GEOMETRY_PLAN.md) · [3D Geometry Plan](docs/3D_GEOMETRY_PLAN.md) · [Reference Analysis](docs/REFERENCE_ANALYSIS.md) · [Contributing](CONTRIBUTING.md)
 
@@ -79,13 +79,13 @@ The current C++20 core provides:
 - Weighted rectangular / treemap-style subdivision.
 - Room-cell ownership and room adjacency output.
 - Polygon geometry, concave region and courtyard partition validation, polygon offsets, and uniform lot setback calculations.
-- A deterministic five-space / one-bedroom residential prototype with south-side entrance and three zoning profiles.
+- A legacy deterministic five-space / one-bedroom residential prototype with three zoning profiles.\n- An experimental topology-driven solver with three adjacency graph strategies, configurable 1–4 bedroom and 1–4 bathroom schedules, and selectable entrance facade.
 - A versioned parametric Building Brief contract for site dimensions, four-side setbacks, floor count/height, room schedules, target/minimum areas, priorities, and adjacency rules.
 - Input feasibility validation and explicit compatibility diagnostics against the currently implemented residential solver.
-- Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.
+- Room, opening, dimension, overlap, access, corridor-width, and door-approach validation.\n- Role-aware exterior windows, interior doors, and open-plan connections; connected room access is required before topology-driven plan export.\n- Architectural SVG output with wall/opening overlays and normalized daylight-potential, privacy, circulation, and overall quality scores.
 - Candidate generation and ranking for supported residential profiles.
 - Repeated-floor building data and preliminary stair/elevator core footprint validation.
-- A parameter-driven `mbf_build_house` command-line prototype that exports an SVG plan and reports the generated brief.
+- A parameter-driven `mbf_build_house` legacy CLI and `mbf_generate_topology_house` experimental CLI.\n- A local browser-based Parametric Lab with JSON brief import/export, candidate ranking, quality metrics, and SVG downloads.
 - CMake build configuration, sample executable, and automated tests.
 - GitHub Actions build-and-test workflow.
 
