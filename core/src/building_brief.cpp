@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
+#include <iterator>
 
 namespace mbf {
 namespace {
