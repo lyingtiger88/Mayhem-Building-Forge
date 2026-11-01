@@ -9,6 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Test Parametric Lab server
+        run: python -m unittest discover -s tests -p 'test_gui_server.py' -v
+      - name: Check Python syntax
+        run: python -m py_compile scripts/mbf_gui_server.py tests/test_gui_server.py
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
