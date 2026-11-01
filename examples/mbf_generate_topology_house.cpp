@@ -54,24 +54,24 @@ int main(int argc,char** argv) {
             if(i+1>=argc)throw std::invalid_argument("Missing value after "+arg);
             const std::string value=argv[++i];
             if(arg=="--width")width=parse_real(value,arg);
-            else if(arg=="--depth")depth=std::stod(value);
-            else if(arg=="--setback-south")south=std::stod(value);
-            else if(arg=="--setback-north")north=std::stod(value);
-            else if(arg=="--setback-east")east=std::stod(value);
-            else if(arg=="--setback-west")west=std::stod(value);
+            else if(arg=="--depth")depth=parse_real(value,arg);
+            else if(arg=="--setback-south")south=parse_real(value,arg);
+            else if(arg=="--setback-north")north=parse_real(value,arg);
+            else if(arg=="--setback-east")east=parse_real(value,arg);
+            else if(arg=="--setback-west")west=parse_real(value,arg);
             else if(arg=="--bedrooms") {
                 const auto n=parse_unsigned(value,arg);
                 if(n<1U||n>4U)throw std::invalid_argument("--bedrooms must be between 1 and 4.");
                 bedrooms=static_cast<std::uint32_t>(n);
             } else if(arg=="--bathrooms") {
-                const auto n=std::stoul(value);
+                const auto n=parse_unsigned(value,arg);
                 if(n<1U||n>4U)throw std::invalid_argument("--bathrooms must be between 1 and 4.");
                 bathrooms=static_cast<std::uint32_t>(n);
-            } else if(arg=="--living-area")living_area=std::stod(value);
-            else if(arg=="--kitchen-area")kitchen_area=std::stod(value);
-            else if(arg=="--bedroom-area")bedroom_area=std::stod(value);
-            else if(arg=="--bathroom-area")bathroom_area=std::stod(value);
-            else if(arg=="--hallway-area")hallway_area=std::stod(value);
+            } else if(arg=="--living-area")living_area=parse_real(value,arg);
+            else if(arg=="--kitchen-area")kitchen_area=parse_real(value,arg);
+            else if(arg=="--bedroom-area")bedroom_area=parse_real(value,arg);
+            else if(arg=="--bathroom-area")bathroom_area=parse_real(value,arg);
+            else if(arg=="--hallway-area")hallway_area=parse_real(value,arg);
             else if(arg=="--entrance-side") {
                 if(value=="south")entrance_side=EntranceSide::South;
                 else if(value=="north")entrance_side=EntranceSide::North;
@@ -79,7 +79,7 @@ int main(int argc,char** argv) {
                 else if(value=="west")entrance_side=EntranceSide::West;
                 else throw std::invalid_argument("--entrance-side must be south, north, east, or west.");
             } else if(arg=="--floors") {
-                const auto n=std::stoul(value);
+                const auto n=parse_unsigned(value,arg);
                 if(n!=1U)throw std::invalid_argument("The topology-driven geometric solver currently supports one floor. Multi-floor generation is not yet integrated.");
                 floors=static_cast<std::uint32_t>(n);
             } else if(arg=="--seed")seed=parse_seed(value);
