@@ -82,6 +82,36 @@ def generate_topology_preview(executable: Path, bedrooms: int):
         }
 
 
+def generate_topology_plans(executable: Path, values):
+    with tempfile.TemporaryDirectory(prefix="mbf-topology-plans-") as temp:
+        prefix = Path(temp) / "topology_candidate"
+        args = [
+            str(executable), "--width", str(values["width"]), "--depth", str(values["depth"]),
+            "--setback-south", str(values["south"]), "--setback-north", str(values["north"]),
+            "--setback-east", str(values["east"]), "--setback-west", str(values["west"]),
+            "--bedrooms", str(values["bedrooms"]), "--seed", str(values["seed"]),
+            "--output-prefix", str(prefix),
+        ]
+        completed = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
+                                   timeout=90, check=False)
+        candidates = []
+        for index, path in enumerate(sorted(Path(temp).glob("topology_candidate_*.svg")), start=1):
+            strategy = f"Topology candidate {index}"
+            for line in completed.stdout.splitlines():
+                if line.startswith(f"Candidate {index}:"):
+                    strategy = line.split(":", 1)[1].split("|", 1)[0].strip()
+                    break
+            candidates.append({
+                "profile": strategy,
+                "svg": path.read_text(encoding="utf-8"),
+            })
+        return {
+            "candidates": candidates,
+            "report": completed.stdout[-10000:],
+            "error": completed.stderr[-10000:] if completed.returncode else "",
+        }
+
+
 class Handler(BaseHTTPRequestHandler):
     executable: Path
 
@@ -120,12 +150,16 @@ class Handler(BaseHTTPRequestHandler):
             candidates = [generate(self.executable, values, item) for item in requested]
             good = [candidate for candidate in candidates if candidate["ok"]]
             topology = generate_topology_preview(self.topology_executable, values["bedrooms"])
-            message = "" if good else "No valid floor-plan candidate was produced. See the diagnostics below."
+            topology_plans = generate_topology_plans(self.topology_house_executable, values)
+            message = "" if good else "The legacy profile generator did not produce a valid floor plan. See diagnostics."
             body = json.dumps({
                 "candidates": candidates, "error": message,
                 "topology_svg": topology["svg"],
                 "topology_report": topology["report"],
                 "topology_error": topology["error"],
+                "topology_plans": topology_plans["candidates"],
+                "topology_plan_report": topology_plans["report"],
+                "topology_plan_error": topology_plans["error"],
             }, ensure_ascii=False).encode("utf-8")
             self.send_bytes(200, body, "application/json; charset=utf-8")
         except subprocess.TimeoutExpired:
@@ -147,18 +181,24 @@ def main():
                         help="Path to the compiled mbf_build_house executable.")
     parser.add_argument("--topology-exe", default="build/Release/mbf_topology_preview.exe",
                         help="Path to the compiled topology preview executable.")
+    parser.add_argument("--topology-house-exe", default="build/Release/mbf_generate_topology_house.exe",
+                        help="Path to the topology-driven floor-plan generator executable.")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     executable = (ROOT / args.exe).resolve() if not Path(args.exe).is_absolute() else Path(args.exe)
     topology_executable = (ROOT / args.topology_exe).resolve() if not Path(args.topology_exe).is_absolute() else Path(args.topology_exe)
     if not executable.is_file():
         raise SystemExit(f"Generator executable not found: {executable}\nBuild it first with: cmake --build build --config Release")
+    topology_house_executable = (ROOT / args.topology_house_exe).resolve() if not Path(args.topology_house_exe).is_absolute() else Path(args.topology_house_exe)
     if not topology_executable.is_file():
         raise SystemExit(f"Topology preview executable not found: {topology_executable}\nBuild it first with: cmake --build build --config Release")
+    if not topology_house_executable.is_file():
+        raise SystemExit(f"Topology house generator not found: {topology_house_executable}\nBuild it first with: cmake --build build --config Release")
     if not (1 <= args.port <= 65535):
         raise SystemExit("Port must be between 1 and 65535.")
     Handler.executable = executable
     Handler.topology_executable = topology_executable
+    Handler.topology_house_executable = topology_house_executable
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"Mayhem Parametric Lab is running at http://127.0.0.1:{args.port}")
     print(f"Native engine: {executable}")
