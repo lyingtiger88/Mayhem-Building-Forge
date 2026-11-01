@@ -132,6 +132,22 @@ std::vector<ResidentialVariation> generate_residential_variations(
         settings.circulation_depth_ratio=profile.circulation_depth;
         settings.living_width_ratio=profile.living_width;
         settings.bedroom_width_ratio=profile.bedroom_width;
+
+        // Adapt the private band to the footprint aspect ratio. A fixed private
+        // depth makes bedrooms excessively shallow on wide, shallow lots.
+        const double minimum_private_depth_ratio =
+            std::max(profile.bedroom_width,1.0-profile.bedroom_width) *
+            base.width_m / (base.depth_m * validation_settings.maximum_room_aspect_ratio) * 1.03;
+        const double current_private_depth_ratio =
+            1.0-settings.public_zone_depth_ratio-settings.circulation_depth_ratio;
+        if(minimum_private_depth_ratio>current_private_depth_ratio) {
+            const double required_private=minimum_private_depth_ratio;
+            const double available_for_public=
+                1.0-settings.circulation_depth_ratio-required_private;
+            if(available_for_public<0.36) continue;
+            settings.public_zone_depth_ratio=std::min(
+                settings.public_zone_depth_ratio,available_for_public);
+        }
         // Derive distinct, repeatable seeds without making geometry depend on randomness.
         settings.seed=base.seed+static_cast<std::uint64_t>(profile.profile)*0x9E3779B97F4A7C15ULL;
         auto layout=generate_balanced_residential_layout(settings);
