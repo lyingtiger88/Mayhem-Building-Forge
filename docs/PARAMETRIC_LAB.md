@@ -1,0 +1,71 @@
+# Parametric Lab — User Guide
+
+## Purpose
+
+The Parametric Lab is a local graphical test bench for the current Mayhem Building Forge C++ generator. It is a thin user interface over the native executable, not a second implementation of the layout algorithm.
+
+## Requirements
+
+- Windows 10/11
+- Visual Studio 2022 C++ workload
+- CMake 3.20+
+- Git
+- Python 3 (standard library only)
+- A successful build of `mbf_build_house.exe`
+
+## Start
+
+From the repository root in PowerShell:
+
+```powershell
+.\scripts\run_parametric_lab.ps1
+```
+
+The launcher builds the native executable if it is missing, then starts the local server. Open:
+
+```text
+http://127.0.0.1:8765
+```
+
+Keep the PowerShell window open while using the Lab. Press Ctrl+C in that window to stop the server.
+
+## Controls
+
+- Site width/depth: outer site dimensions in metres.
+- South/north/east/west setbacks: deducted from the site to calculate the buildable rectangular footprint.
+- Floors: number of repeated floors in the current model.
+- Bedrooms requested: current residential solver accepts exactly one bedroom.
+- Seed: reproducible generation seed.
+- Design variations: generate one selected profile or compare all three currently implemented profiles.
+
+When all profiles are requested, the local server invokes the native C++ executable separately for Balanced Conventional, Open Living, and Privacy First. Each successful SVG is shown as a separate candidate card with its generation report.
+
+## How the integration works
+
+1. The browser sends the brief to `127.0.0.1`.
+2. `scripts/mbf_gui_server.py` validates the request.
+3. The local server runs `mbf_build_house.exe` with explicit command-line arguments.
+4. The C++ engine performs candidate generation and its current validation.
+5. The server returns the generated SVG and diagnostics to the browser.
+
+The server binds to loopback only. It does not expose a network listener to the LAN or send project data to an external service.
+
+## Current limitations
+
+- The C++ residential planner still generates a fixed five-space, one-bedroom typology.
+- The three profiles alter zoning ratios but do not yet represent three independent room-adjacency graphs/topologies.
+- Multi-floor plans repeat the same floor plan.
+- The GUI currently tests the existing 2D generator; it is not yet a freeform visual room editor or 3D preview.
+- Local zoning/building-code compliance, daylight simulation, structural design, furniture placement, and Unreal integration are not provided.
+
+The Lab is a development tool. Its output is not a construction drawing or proof of regulatory compliance.
+
+## Troubleshooting
+
+**Generator executable not found:** run the launcher again; it attempts to configure and build the CMake project. If CMake fails, inspect the compiler output in PowerShell.
+
+**Python not found:** install Python 3 and enable the Python Launcher (`py -3`) or add `python.exe` to PATH.
+
+**Browser says it cannot connect:** make sure the PowerShell server window remains open and that the address is exactly `http://127.0.0.1:8765`.
+
+**No valid candidate:** inspect the diagnostic text in the candidate area. A valid Building Brief is not necessarily supported by the current residential solver.
