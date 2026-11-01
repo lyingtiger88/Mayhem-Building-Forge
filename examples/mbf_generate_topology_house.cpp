@@ -3,6 +3,7 @@
 #include "mbf/generator.hpp"
 #include "mbf/topology.hpp"
 #include "mbf/spatial_quality.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
