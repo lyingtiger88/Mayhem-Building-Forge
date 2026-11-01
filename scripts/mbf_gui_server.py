@@ -144,6 +144,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_bytes(200, target.read_bytes(), "text/html; charset=utf-8")
             else:
                 self.send_bytes(500, b"gui/index.html is missing", "text/plain; charset=utf-8")
+        elif path == "/app.js":
+            target = GUI_DIR / "app.js"
+            if target.is_file():
+                self.send_bytes(200, target.read_bytes(), "text/javascript; charset=utf-8")
+            else:
+                self.send_bytes(500, b"gui/app.js is missing", "text/plain; charset=utf-8")
         elif path == "/health":
             self.send_bytes(200, b'{"status":"ok","engine":"mbf_build_house"}', "application/json")
         else:
