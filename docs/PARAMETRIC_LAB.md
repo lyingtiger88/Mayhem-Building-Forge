@@ -35,7 +35,9 @@ Keep the PowerShell window open while using the Lab. Press Ctrl+C in that window
 - South/north/east/west setbacks: deducted from the site to calculate the buildable rectangular footprint.
 - Entrance facade: south, north, east, or west.
 - Floors: the topology-driven solver currently accepts one floor; multi-floor requests are rejected explicitly.
-- Bedrooms requested: the experimental topology-driven solver accepts 1–4 bedrooms.\n- Bathrooms requested: 1–4 bathrooms.\n- Room target areas: living, kitchen, bedroom, bathroom, and hallway areas are independently adjustable within validated ranges. The UI shows the requested total against the buildable footprint.
+- Bedrooms requested: the experimental topology-driven solver accepts 1–4 bedrooms.
+- Bathrooms requested: 1–4 bathrooms.
+- Room target areas: living, kitchen, bedroom, bathroom, and hallway areas are independently adjustable within validated ranges. The UI shows the requested total against the buildable footprint.
 - Bathrooms requested: 1–4 bathrooms.
 - Seed: reproducible generation seed.
 - Brief persistence: import/export the current parameter set as JSON.
