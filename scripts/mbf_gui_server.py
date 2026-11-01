@@ -119,9 +119,15 @@ def generate_topology_plans(executable: Path, values):
                             if field.startswith("accessible "):
                                 metrics["accessible"] = field[len("accessible "):]
                     break
+            warnings = [
+                line.split(":", 1)[1].strip()
+                for line in completed.stdout.splitlines()
+                if line.startswith(f"Warning Candidate {index}:")
+            ]
             candidates.append({
                 "profile": strategy,
                 "quality": metrics,
+                "warnings": warnings,
                 "svg": path.read_text(encoding="utf-8"),
             })
         candidates.sort(
