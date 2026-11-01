@@ -754,17 +754,25 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         return fail("Wall SVG export requires a valid building geometry, wall topology, and output path.");
     if(!topology.valid)
         return fail("Cannot export an invalid wall topology.");
-    constexpr double margin=28.0,scale=52.0;
+    constexpr double margin=62.0,scale=52.0;
     const double width=geometry.width_m*scale+margin*2.0;
-    const double height=geometry.depth_m*scale+margin*2.0;
+    const double height=geometry.depth_m*scale+margin*2.0+48.0;
     std::ostringstream svg;
     svg<<"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\""<<width
        <<"\" height=\""<<height<<"\" viewBox=\"0 0 "<<width<<" "<<height<<"\">\n"
-       <<"<rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n"
+       <<"<rect width=\"100%\" height=\"100%\" fill=\"#f6f8fb\"/>\n"
+       <<"<text x=\""<<margin<<"\" y=\"30\" fill=\"#263a56\" font-family=\"Arial,sans-serif\" font-size=\"17\" font-weight=\"700\">MAYHEM  /  FLOOR PLAN</text>\n"
        <<"<g transform=\"translate("<<margin<<","<<margin+geometry.depth_m*scale
        <<") scale("<<scale<<","<<-scale<<")\">\n";
     for(const auto& room:geometry.rooms) {
-        svg<<"<g fill=\""<<room_color(room.id)<<"\" stroke=\"none\" fill-rule=\"evenodd\">\n";
+        const auto& name=room.name;
+        const char* fill="#eff2f7";
+        if(name.find("Living")!=std::string::npos)fill="#dff0ec";
+        else if(name.find("Kitchen")!=std::string::npos)fill="#f8ecd6";
+        else if(name.find("Bedroom")!=std::string::npos)fill="#e3e9fb";
+        else if(name.find("Bathroom")!=std::string::npos)fill="#e0f0fa";
+        else if(name.find("Hallway")!=std::string::npos)fill="#f0f2f5";
+        svg<<"<g fill=\""<<fill<<"\" stroke=\"none\" fill-rule=\"evenodd\">\n";
         for(const auto& ring:room.rings) {
             if(ring.vertices.size()<3U)continue;
             svg<<"<path d=\"M "<<ring.vertices.front().x<<" "<<ring.vertices.front().y;
@@ -812,7 +820,7 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         if(count==0U)continue;
         cx/=static_cast<double>(count);cy/=static_cast<double>(count);
         svg<<"<text x=\""<<cx<<"\" y=\""<<cy
-           <<"\" font-family=\"Arial,sans-serif\" font-size=\"0.30\" text-anchor=\"middle\" "
+           <<"\" font-family=\"Arial,sans-serif\" font-size=\"0.31\" font-weight=\"600\" text-anchor=\"middle\" "
            <<"fill=\"#17202a\" stroke=\"#ffffff\" stroke-width=\"0.025\" paint-order=\"stroke\">";
         append_svg_escape(svg,room.name);
         svg<<"</text>\n";
@@ -822,7 +830,7 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
        <<"<text x=\""<<margin<<"\" y=\""<<height-8<<"\" >"
        <<geometry.width_m<<" m x "<<geometry.depth_m<<" m · Walls / openings</text>"
        <<"<text x=\""<<margin<<"\" y=\"14\">"
-       <<"Dark: wall · Green: entrance · Amber: interior door · Blue: window · Purple: open plan</text>"
+       <<"GREEN  ENTRANCE    AMBER  DOOR    BLUE  WINDOW    PURPLE  OPEN PLAN</text>"
        <<"</g></svg>\n";
     std::ofstream file(output_path,std::ios::binary);
     if(!file)return fail("Could not open wall topology SVG output path: "+output_path);
