@@ -39,6 +39,9 @@ struct RoomTopology {
 
 [[nodiscard]] std::vector<RoomTopology> generate_room_topology_candidates(
     const BuildingBrief& brief);
+[[nodiscard]] bool export_room_topologies_svg(
+    const std::vector<RoomTopology>& topologies, const std::string& output_path,
+    std::string* error = nullptr);
 [[nodiscard]] bool validate_room_topology(
     const RoomTopology& topology, const BuildingBrief& brief,
     std::vector<std::string>* diagnostics = nullptr);
