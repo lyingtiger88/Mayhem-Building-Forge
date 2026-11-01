@@ -2,6 +2,7 @@
 #include "mbf/geometry2d.hpp"
 #include "mbf/generator.hpp"
 #include "mbf/topology.hpp"
+#include "mbf/spatial_quality.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -64,6 +65,7 @@ int main(int argc,char** argv) {
         for(const auto& topology:topologies) {
             try {
                 const auto plan=generator.generate_topology_layout(settings,brief,topology);
+                const auto quality=evaluate_spatial_quality(plan,brief);
                 const auto geometry=build_geometry_2d(plan);
                 if(!geometry.valid) {
                     std::cout<<"Skipped "<<topology.strategy_name<<": geometry conversion failed.\n";
@@ -78,7 +80,10 @@ int main(int argc,char** argv) {
                 }
                 std::cout<<"Candidate "<<exported<<": "<<topology.strategy_name
                          <<" | rooms "<<plan.rooms.size()<<" | topology score "
-                         <<topology.quality_score<<" | "<<path<<'\n';
+                         <<topology.quality_score<<" | daylight "<<quality.daylight_score
+                         <<" | privacy "<<quality.privacy_score<<" | circulation "
+                         <<quality.circulation_score<<" | overall "<<quality.overall_score
+                         <<" | "<<path<<'\n';
             } catch(const std::runtime_error& error) {
                 std::cout<<"Skipped "<<topology.strategy_name<<": "<<error.what()<<'\n';
             }
