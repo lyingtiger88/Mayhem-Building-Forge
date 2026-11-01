@@ -50,8 +50,8 @@ When all profiles are requested, the local server invokes the native C++ executa
 
 1. The browser sends the brief to `127.0.0.1`.
 2. `scripts/mbf_gui_server.py` validates the request.
-3. The local server runs `mbf_build_house.exe` with explicit command-line arguments.
-4. The C++ engine performs candidate generation and its current validation. A second native executable generates and exports the current room-topology graphs for inspection.
+3. The local server runs the legacy profile generator, topology graph preview, and topology-driven house generator with explicit command-line arguments.
+4. The C++ engine generates room graphs, solves supported graphs into rectangular plans, creates role-aware openings, validates room access, and returns ranked SVG candidates.
 5. The server returns the generated SVG and diagnostics to the browser.
 
 The server binds to loopback only. It does not expose a network listener to the LAN or send project data to an external service.
