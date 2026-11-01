@@ -13,7 +13,7 @@ function updateSiteSummary(){
   Number($("bedrooms").value)*Number($("bedroom_area").value)+
   Number($("bathrooms").value)*Number($("bathroom_area").value)+Number($("hallway_area").value);
  const remaining=buildable-target;
- host.textContent="Buildable: "+width.toFixed(1)+" × "+depth.toFixed(1)+" m · "+buildable.toFixed(1)+" m² | Room targets: "+target.toFixed(1)+" m² | "+(remaining>=0?"Unallocated: "+remaining.toFixed(1)+" m²":"Target overage: "+Math.abs(remaining).toFixed(1)+" m²");
+ host.textContent="Buildable: "+width.toFixed(1)+" × "+depth.toFixed(1)+" m · "+buildable.toFixed(1)+" m² | Target area total: "+target.toFixed(1)+" m² | "+(remaining>=0?"Target gap: "+remaining.toFixed(1)+" m²":"Targets exceed footprint by: "+Math.abs(remaining).toFixed(1)+" m²");
  host.style.color=remaining<0?"#ff8585":"var(--muted)";
 }
 for(const id of ["width","depth","south","north","east","west","bedrooms","bathrooms","living_area","kitchen_area","bedroom_area","bathroom_area","hallway_area"])$(id).addEventListener("input",updateSiteSummary);
