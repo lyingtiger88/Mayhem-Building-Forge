@@ -138,6 +138,9 @@ void rebuild_wall_pieces(WallTopology2D& topology, double tolerance = 1e-7);
 [[nodiscard]] std::vector<std::uint64_t> generate_default_openings(
     WallTopology2D& topology, const Entrance2D& entrance,
     const OpeningSettings2D& settings = {});
+[[nodiscard]] std::vector<std::uint64_t> generate_residential_openings(
+    WallTopology2D& topology, const FloorPlan& plan,
+    const OpeningSettings2D& settings = {});
 [[nodiscard]] bool export_geometry_svg(const BuildingGeometry2D& geometry,
                                        const std::string& output_path,
                                        std::string* error = nullptr);
