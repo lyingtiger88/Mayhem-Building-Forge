@@ -783,17 +783,17 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         svg<<"</g>\n";
     }
     // Procedural, room-aware furniture symbols. Coordinates remain in metres.
-    svg<<"<g id=\"FURNITURE\" stroke-linejoin=\"round\" stroke-linecap=\"round\">\\n";
+    svg<<"<g id=\"FURNITURE\" stroke-linejoin=\"round\" stroke-linecap=\"round\">\n";
     const auto furniture_rect=[&](double x,double y,double w,double h,const char* fill,
                                    const char* stroke,double radius=0.06) {
         if(w<=0.0||h<=0.0)return;
         svg<<"<rect x=\""<<x<<"\" y=\""<<y<<"\" width=\""<<w
            <<"\" height=\""<<h<<"\" rx=\""<<radius<<"\" fill=\""<<fill
-           <<"\" stroke=\""<<stroke<<"\" stroke-width=\"0.035\"/>\\n";
+           <<"\" stroke=\""<<stroke<<"\" stroke-width=\"0.035\"/>\n";
     };
     const auto furniture_line=[&](double x1,double y1,double x2,double y2,const char* color) {
         svg<<"<line x1=\""<<x1<<"\" y1=\""<<y1<<"\" x2=\""<<x2
-           <<"\" y2=\""<<y2<<"\" stroke=\""<<color<<"\" stroke-width=\"0.035\"/>\\n";
+           <<"\" y2=\""<<y2<<"\" stroke=\""<<color<<"\" stroke-width=\"0.035\"/>\n";
     };
     for(const auto& room:geometry.rooms) {
         if(room.rings.empty()||room.rings.front().vertices.size()<3U)continue;
@@ -832,14 +832,14 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
             furniture_rect(min_x+pad,min_y+pad,0.72,0.78,"#dcebf0","#829ca7",0.10);
             furniture_rect(max_x-pad-0.78,min_y+pad,0.72,0.72,"#ffffff","#829ca7",0.20);
             svg<<"<ellipse cx=\""<<min_x+pad+0.36<<"\" cy=\""<<min_y+pad+0.39
-               <<"\" rx=\"0.19\" ry=\"0.23\" fill=\"#ffffff\" stroke=\"#829ca7\" stroke-width=\"0.035\"/>\\n";
+               <<"\" rx=\"0.19\" ry=\"0.23\" fill=\"#ffffff\" stroke=\"#829ca7\" stroke-width=\"0.035\"/>\n";
             furniture_rect(min_x+pad,max_y-pad-0.72,0.78,0.62,"#d8e8ee","#829ca7",0.08);
         } else if(name.find("Hallway")!=std::string::npos) {
             const double cw=std::min(0.34,w-0.5);
             if(cw>0.2)furniture_rect(min_x+pad,min_y+pad,cw,std::min(1.1,h-2*pad),"#c9b99f","#8f806c",0.025);
         }
     }
-    svg<<"</g>\\n";
+    svg<<"</g>\n";
     for(const auto& wall:topology.walls)
         svg<<"<line x1=\""<<wall.start.x<<"\" y1=\""<<wall.start.y
            <<"\" x2=\""<<wall.end.x<<"\" y2=\""<<wall.end.y
