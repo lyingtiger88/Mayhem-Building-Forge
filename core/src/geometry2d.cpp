@@ -782,6 +782,64 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         }
         svg<<"</g>\n";
     }
+    // Procedural, room-aware furniture symbols. Coordinates remain in metres.
+    svg<<"<g id=\"FURNITURE\" stroke-linejoin=\"round\" stroke-linecap=\"round\">\\n";
+    const auto furniture_rect=[&](double x,double y,double w,double h,const char* fill,
+                                   const char* stroke,double radius=0.06) {
+        if(w<=0.0||h<=0.0)return;
+        svg<<"<rect x=\""<<x<<"\" y=\""<<y<<"\" width=\""<<w
+           <<"\" height=\""<<h<<"\" rx=\""<<radius<<"\" fill=\""<<fill
+           <<"\" stroke=\""<<stroke<<"\" stroke-width=\"0.035\"/>\\n";
+    };
+    const auto furniture_line=[&](double x1,double y1,double x2,double y2,const char* color) {
+        svg<<"<line x1=\""<<x1<<"\" y1=\""<<y1<<"\" x2=\""<<x2
+           <<"\" y2=\""<<y2<<"\" stroke=\""<<color<<"\" stroke-width=\"0.035\"/>\\n";
+    };
+    for(const auto& room:geometry.rooms) {
+        if(room.rings.empty()||room.rings.front().vertices.size()<3U)continue;
+        double min_x=room.rings.front().vertices.front().x,max_x=min_x;
+        double min_y=room.rings.front().vertices.front().y,max_y=min_y;
+        for(const auto& ring:room.rings)for(const auto& point:ring.vertices) {
+            min_x=std::min(min_x,point.x);max_x=std::max(max_x,point.x);
+            min_y=std::min(min_y,point.y);max_y=std::max(max_y,point.y);
+        }
+        const double w=max_x-min_x,h=max_y-min_y;
+        const double pad=0.22;
+        if(w<1.8||h<1.8)continue;
+        const auto& name=room.name;
+        if(name.find("Bedroom")!=std::string::npos) {
+            const double bw=std::min(1.6,w-2*pad),bh=std::min(2.0,h*0.58);
+            const double bx=min_x+(w-bw)*0.5,by=min_y+pad;
+            furniture_rect(bx,by,bw,bh,"#f8f3e9","#8d806d",0.09);
+            furniture_rect(bx+0.08,by+0.08,bw*0.43,bh*0.25,"#ffffff","#c5b9a8",0.07);
+            furniture_rect(bx+bw*0.53,by+0.08,bw*0.39,bh*0.25,"#ffffff","#c5b9a8",0.07);
+            furniture_rect(bx-0.32,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
+            furniture_rect(bx+bw+0.08,by+0.10,0.24,0.34,"#c6ad8e","#8d806d",0.035);
+            furniture_rect(min_x+pad,max_y-pad-0.48,std::min(1.35,w-2*pad),0.42,"#c9b79d","#8d806d",0.035);
+        } else if(name.find("Living")!=std::string::npos) {
+            const double sw=std::min(2.25,w-2*pad),sh=0.82;
+            furniture_rect(min_x+pad,max_y-pad-sh,sw,sh,"#d8c6b2","#8f7967",0.14);
+            furniture_line(min_x+pad+0.12,max_y-pad-sh+0.28,min_x+pad+sw-0.12,max_y-pad-sh+0.28,"#a18a76");
+            furniture_rect(min_x+(w-1.0)*0.5,min_y+pad+0.78,1.0,0.58,"#c6a77f","#8f7967",0.07);
+            furniture_rect(min_x+(w-1.55)*0.5,min_y+pad,1.55,0.20,"#8d9aa5","#657483",0.025);
+        } else if(name.find("Kitchen")!=std::string::npos) {
+            const double counter=0.58;
+            furniture_rect(min_x+pad,min_y+pad,std::min(w-2*pad,2.4),counter,"#e8e3d9","#8b8d8d",0.025);
+            furniture_rect(min_x+pad,min_y+pad+0.08,0.52,0.36,"#b9d4df","#718d9b",0.025);
+            furniture_rect(min_x+pad+0.72,min_y+pad+0.08,0.42,0.36,"#444b55","#202833",0.025);
+            if(h>2.5)furniture_rect(max_x-pad-0.58,min_y+pad,0.58,1.65,"#d5dce2","#8996a2",0.035);
+        } else if(name.find("Bathroom")!=std::string::npos) {
+            furniture_rect(min_x+pad,min_y+pad,0.72,0.78,"#dcebf0","#829ca7",0.10);
+            furniture_rect(max_x-pad-0.78,min_y+pad,0.72,0.72,"#ffffff","#829ca7",0.20);
+            svg<<"<ellipse cx=\""<<min_x+pad+0.36<<"\" cy=\""<<min_y+pad+0.39
+               <<"\" rx=\"0.19\" ry=\"0.23\" fill=\"#ffffff\" stroke=\"#829ca7\" stroke-width=\"0.035\"/>\\n";
+            furniture_rect(min_x+pad,max_y-pad-0.72,0.78,0.62,"#d8e8ee","#829ca7",0.08);
+        } else if(name.find("Hallway")!=std::string::npos) {
+            const double cw=std::min(0.34,w-0.5);
+            if(cw>0.2)furniture_rect(min_x+pad,min_y+pad,cw,std::min(1.1,h-2*pad),"#c9b99f","#8f806c",0.025);
+        }
+    }
+    svg<<"</g>\\n";
     for(const auto& wall:topology.walls)
         svg<<"<line x1=\""<<wall.start.x<<"\" y1=\""<<wall.start.y
            <<"\" x2=\""<<wall.end.x<<"\" y2=\""<<wall.end.y
