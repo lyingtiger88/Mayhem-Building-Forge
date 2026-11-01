@@ -331,6 +331,20 @@ void topology_to_geometry_solver(){
   }
  }
  req(solved,"at least one generated room topology is realized as a valid floor plan");
+ auto multi_bath=brief;multi_bath.rooms[3].count=2;
+ const auto multi_bath_graphs=generate_room_topology_candidates(multi_bath);
+ bool multi_bath_solved=false;
+ for(const auto& graph:multi_bath_graphs) {
+  try {
+   const auto plan=generator.generate_topology_layout(settings,multi_bath,graph);
+   req(validate_floor_plan(plan).valid,"multiple-bathroom topology plan validates");
+   const auto bath_count=std::count_if(plan.rooms.begin(),plan.rooms.end(),
+    [](const auto& room){return room.role==RoomRole::Bathroom;});
+   req(bath_count==2,"geometric solver preserves requested bathroom count");
+   multi_bath_solved=true;break;
+  } catch(const std::runtime_error&) {}
+ }
+ req(multi_bath_solved,"topology solver realizes a two-bathroom schedule");
  for(const auto side:{EntranceSide::North,EntranceSide::East,EntranceSide::West}) {
   auto oriented=brief;oriented.entrance_side=side;
   const auto graphs=generate_room_topology_candidates(oriented);
