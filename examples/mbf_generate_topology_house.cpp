@@ -92,7 +92,7 @@ int main(int argc,char** argv) {
                     signature<<room.id<<':'<<room.bounds.x<<','<<room.bounds.y<<','
                              <<room.bounds.width<<','<<room.bounds.height<<';';
                 if(!geometric_signatures.insert(signature.str()).second) {
-                    std::cout<<"Skipped "<<topology.strategy_name<<": duplicate floor-plan geometry.\\n";
+                    std::cout<<"Skipped "<<topology.strategy_name<<": duplicate floor-plan geometry.\n";
                     continue;
                 }
                 const auto quality=evaluate_spatial_quality(plan,brief);
