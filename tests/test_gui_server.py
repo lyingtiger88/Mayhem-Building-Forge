@@ -13,7 +13,7 @@ class ParametricLabInputTests(unittest.TestCase):
         self.brief = {
             "width": 20, "depth": 15, "south": 3, "north": 2,
             "east": 1, "west": 2, "floors": 2, "bedrooms": 1,
-            "seed": 42, "profile": "all",
+            "seed": 42, "bathrooms": 1, "profile": "all",
         }
 
     def test_valid_brief_and_all_profiles(self):
