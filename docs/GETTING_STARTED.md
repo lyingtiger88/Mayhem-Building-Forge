@@ -81,7 +81,9 @@ This exports relationship graphs for inspection. It does not yet solve those gra
 The experimental topology solver accepts 1–4 bedrooms, 1–4 bathrooms, and an entrance facade:
 
 ```powershell
-.\\build\\Release\\mbf_generate_topology_house.exe --width 18 --depth 12 --bedrooms 3 --bathrooms 2 --entrance-side east --floors 1 `\n  --living-area 28 --kitchen-area 14 --bedroom-area 16 --bathroom-area 7 --hallway-area 9 `\n  --seed 42 --output-prefix house
+.\build\Release\mbf_generate_topology_house.exe --width 18 --depth 12 --bedrooms 3 --bathrooms 2 --entrance-side east --floors 1 `
+  --living-area 28 --kitchen-area 14 --bedroom-area 16 --bathroom-area 7 --hallway-area 9 `
+  --seed 42 --output-prefix house
 ```
 
 It exports SVG candidates only when the current geometry, wall-opening, and room-access checks pass. This solver currently supports one floor and rectangular guillotine partitions.
