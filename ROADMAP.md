@@ -85,15 +85,18 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [ ] Add robust concave offset cleanup, round/bevel joins, and per-edge/front-side setbacks; support courtyard wall offsets and narrow-neck collapse handling.
 - [x] Add three deterministic residential profile variants for the initial five-space prototype; current variants alter zoning ratios but retain the same room graph/topology.
 - [x] Add a local browser-based Parametric Lab that invokes the native C++ generator, previews SVG candidates, compares current profiles, and reports diagnostics.
-- [x] Add bedroom/bathroom count controls, entrance-side selection, JSON brief import/export, ranked candidate comparison, quality metrics, and SVG downloads.\n- [ ] Upgrade the Parametric Lab into a full authoring interface with arbitrary room schedules, live plan editing, and persistent project management.
+- [x] Add bedroom/bathroom count controls, entrance-side selection, JSON brief import/export, ranked candidate comparison, quality metrics, and SVG downloads.
+- [ ] Upgrade the Parametric Lab into a full authoring interface with arbitrary room schedules, live plan editing, and persistent project management.
 - [x] Add an engine-neutral room-topology candidate generator with circulation-hub, public/private-spine, and compact-linear graph strategies; validate required/avoided adjacency and graph connectivity. (Graph layer only; not yet converted into floor-plan geometry.)
 - [ ] Expand profiles into geometrically realized, genuinely different room graphs, including optional vestibules and alternative corridor topologies.
-- [x] Add initial normalized daylight-potential, privacy, circulation, and overall scores; rank topology-derived candidates by overall score.\n- [ ] Improve quality scoring with solar exposure, entrance sightlines, room-level adjacency strength, and detailed circulation efficiency.
+- [x] Add initial normalized daylight-potential, privacy, circulation, and overall scores; rank topology-derived candidates by overall score.
+- [ ] Improve quality scoring with solar exposure, entrance sightlines, room-level adjacency strength, and detailed circulation efficiency.
 - [x] Add a command-line parametric house-generation workflow accepting footprint dimensions, floor count, floor height, profile, seed, and SVG output path.
 - [x] Validate generated candidates and physical circulation before selecting/exporting a plan.
 - [ ] Expand the building brief UI/CLI to arbitrary room types, per-room target areas, priorities, and user-authored adjacency/exclusion rules. The current GUI supports 1–4 bedrooms and 1–4 bathrooms in the default residential schedule.
 - [x] Expose rectangular site dimensions and four-side setbacks in the CLI and Parametric Lab.
-- [x] Add configurable entrance facade (south/north/east/west) to the topology-driven brief.\n- [ ] Add arbitrary polygonal plots, site orientation, accessibility targets, and local rule profiles to the user-facing brief.
+- [x] Add configurable entrance facade (south/north/east/west) to the topology-driven brief.
+- [ ] Add arbitrary polygonal plots, site orientation, accessibility targets, and local rule profiles to the user-facing brief.
 - [x] Add an initial topology-constrained rectangular partition solver that realizes required graph adjacencies, respects avoided role pairs, and enforces per-room minimum area and dimensions.
 - [ ] Generalize topology-to-geometry solving beyond rectangular guillotine partitions and the current default residential brief.
 
