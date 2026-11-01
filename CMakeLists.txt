@@ -14,6 +14,7 @@ add_library(mbf_core
     core/src/multi_floor.cpp
     core/src/building_brief.cpp
     core/src/topology.cpp
+    core/src/topology_svg.cpp
 )
 add_library(MBF::Core ALIAS mbf_core)
 target_include_directories(mbf_core PUBLIC core/include)
@@ -39,4 +40,6 @@ if(MBF_BUILD_EXAMPLES)
     target_link_libraries(mbf_house_layout_demo PRIVATE MBF::Core)
     add_executable(mbf_build_house examples/mbf_build_house.cpp)
     target_link_libraries(mbf_build_house PRIVATE MBF::Core)
+    add_executable(mbf_topology_preview examples/mbf_topology_preview.cpp)
+    target_link_libraries(mbf_topology_preview PRIVATE MBF::Core)
 endif()
