@@ -231,15 +231,12 @@ def main():
     executable = (ROOT / args.exe).resolve() if not Path(args.exe).is_absolute() else Path(args.exe)
     topology_executable = (ROOT / args.topology_exe).resolve() if not Path(args.topology_exe).is_absolute() else Path(args.topology_exe)
     if not executable.is_file():
-        raise SystemExit(f"Generator executable not found: {executable}
-Build it first with: cmake --build build --config Release")
+        raise SystemExit(f"Generator executable not found: {executable}\nBuild it first with: cmake --build build --config Release")
     topology_house_executable = (ROOT / args.topology_house_exe).resolve() if not Path(args.topology_house_exe).is_absolute() else Path(args.topology_house_exe)
     if not topology_executable.is_file():
-        raise SystemExit(f"Topology preview executable not found: {topology_executable}
-Build it first with: cmake --build build --config Release")
+        raise SystemExit(f"Topology preview executable not found: {topology_executable}\nBuild it first with: cmake --build build --config Release")
     if not topology_house_executable.is_file():
-        raise SystemExit(f"Topology house generator not found: {topology_house_executable}
-Build it first with: cmake --build build --config Release")
+        raise SystemExit(f"Topology house generator not found: {topology_house_executable}\nBuild it first with: cmake --build build --config Release")
     if not (1 <= args.port <= 65535):
         raise SystemExit("Port must be between 1 and 65535.")
     Handler.executable = executable
