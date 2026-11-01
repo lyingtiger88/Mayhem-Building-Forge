@@ -509,6 +509,40 @@ std::vector<std::uint64_t> generate_default_openings(
     return created;
 }
 
+std::vector<std::uint64_t> generate_residential_openings(
+        WallTopology2D& topology,const FloorPlan& plan,const OpeningSettings2D& settings) {
+    (void)generate_default_openings(topology,plan.entrance,settings);
+    const auto role_for=[&](RoomId id) {
+        const auto it=std::find_if(plan.rooms.begin(),plan.rooms.end(),
+            [&](const RoomRegion& room){return room.id==id;});
+        return it==plan.rooms.end()?RoomRole::Auto:it->role;
+    };
+    std::vector<WallOpening2D> retained;
+    retained.reserve(topology.openings.size());
+    std::vector<std::uint64_t> ids;
+    for(auto opening:topology.openings) {
+        if(opening.kind==OpeningKind2D::Window) {
+            const auto role=role_for(opening.room_a);
+            if(role==RoomRole::Hallway||role==RoomRole::Circulation||role==RoomRole::Service)
+                continue;
+        }
+        if(opening.kind==OpeningKind2D::InteriorDoor) {
+            const auto a=role_for(opening.room_a),b=role_for(opening.room_b);
+            const bool open_plan_pair=
+                (a==RoomRole::Living&&(b==RoomRole::Kitchen||b==RoomRole::Hallway))||
+                (b==RoomRole::Living&&(a==RoomRole::Kitchen||a==RoomRole::Hallway))||
+                (a==RoomRole::Public&&b==RoomRole::Circulation)||
+                (b==RoomRole::Public&&a==RoomRole::Circulation);
+            if(open_plan_pair)opening.kind=OpeningKind2D::OpenPlan;
+        }
+        ids.push_back(opening.id);
+        retained.push_back(opening);
+    }
+    topology.openings=std::move(retained);
+    rebuild_wall_pieces(topology);
+    return ids;
+}
+
 double Ring2::signed_area_m2() const noexcept {
     if (vertices.size() < 3U) return 0.0;
     double twice_area = 0.0;
