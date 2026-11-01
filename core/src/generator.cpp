@@ -260,20 +260,14 @@ FloorPlan FloorPlanGenerator::generate_topology_layout(
         return std::pair<RoomId,RoomId>{a,b};
     };
     const auto avoided_roles=[&](RoomRole a,RoomRole b) {
-        for(const auto& rule:brief.adjacency)
-            if(rule.strength==AdjacencyStrength::Avoid) {
-                auto first=rule.first,second=rule.second;
-                if(static_cast<int>(first)>static_cast<int>(second))std::swap(first,second);
-                if(ordered_pair(static_cast<RoomId>(a),static_cast<RoomId>(b))==
-                   ordered_pair(static_cast<RoomId>(first),static_cast<RoomId>(second)))return true;
-            }
+        if(static_cast<int>(a)>static_cast<int>(b))std::swap(a,b);
+        for(const auto& rule:brief.adjacency) {
+            if(rule.strength!=AdjacencyStrength::Avoid)continue;
+            auto first=rule.first,second=rule.second;
+            if(static_cast<int>(first)>static_cast<int>(second))std::swap(first,second);
+            if(a==first&&b==second)return true;
+        }
         return false;
-    };
-    const auto has_topology_edge=[&](RoomId a,RoomId b) {
-        const auto key=ordered_pair(a,b);
-        return std::any_of(topology.edges.begin(),topology.edges.end(),[&](const auto& edge){
-            return ordered_pair(edge.first,edge.second)==key;
-        });
     };
     FloorPlan best;
     double best_score=-std::numeric_limits<double>::infinity();
