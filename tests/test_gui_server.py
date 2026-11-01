@@ -55,6 +55,11 @@ class ParametricLabInputTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             SERVER.parse_brief(brief)
 
+    def test_rejects_unsupported_brief_schema(self):
+        brief = dict(self.brief, schema_version=2)
+        with self.assertRaises(ValueError):
+            SERVER.parse_brief(brief)
+
     def test_rejects_unknown_entrance_facade(self):
         brief = dict(self.brief, entrance="northwest")
         with self.assertRaises(ValueError):
