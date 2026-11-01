@@ -55,7 +55,10 @@ The server binds to loopback only. It does not expose a network listener to the 
 - The legacy profile generator still generates a fixed five-space, one-bedroom typology; the experimental topology-driven solver supports a configurable 1–4 bedroom schedule.
 - The three floor-plan profiles alter zoning ratios but do not yet represent three independent geometric floor-plan topologies. The separate topology graph layer can generate distinct relationship graphs, but those graphs are not yet embedded as room polygons.
 - The topology-driven solver currently supports one floor only; multi-floor briefs are rejected explicitly.
-- The topology-constrained geometric solver currently uses rectangular guillotine partitions; it is not yet a general polygonal room-shape optimizer.\n- Doors and windows are placed heuristically; door swings, furniture clearances, and detailed accessibility checks are not yet modeled.\n- Daylight potential, privacy, and circulation scores are explainable heuristics, not full daylight simulation or building-code compliance.\n- The GUI is not yet a freeform visual room editor or 3D preview.
+- The topology-constrained geometric solver currently uses rectangular guillotine partitions; it is not yet a general polygonal room-shape optimizer.
+- Doors and windows are placed heuristically; door swings, furniture clearances, and detailed accessibility checks are not yet modeled.
+- Daylight potential, privacy, and circulation scores are explainable heuristics, not full daylight simulation or building-code compliance.
+- The GUI is not yet a freeform visual room editor or 3D preview.
 - Local zoning/building-code compliance, daylight simulation, structural design, furniture placement, and Unreal integration are not provided.
 
 The Lab is a development tool. Its output is not a construction drawing or proof of regulatory compliance.
