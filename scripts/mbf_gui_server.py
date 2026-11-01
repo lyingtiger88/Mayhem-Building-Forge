@@ -97,12 +97,22 @@ def generate_topology_plans(executable: Path, values):
         candidates = []
         for index, path in enumerate(sorted(Path(temp).glob("topology_candidate_*.svg")), start=1):
             strategy = f"Topology candidate {index}"
+            metrics = {}
             for line in completed.stdout.splitlines():
                 if line.startswith(f"Candidate {index}:"):
-                    strategy = line.split(":", 1)[1].split("|", 1)[0].strip()
+                    fields = [part.strip() for part in line.split("|")]
+                    strategy = fields[0].split(":", 1)[1].strip()
+                    for key in ("daylight", "privacy", "circulation", "overall"):
+                        for field in fields[1:]:
+                            if field.startswith(key + " "):
+                                try:
+                                    metrics[key] = float(field[len(key) + 1:])
+                                except ValueError:
+                                    pass
                     break
             candidates.append({
                 "profile": strategy,
+                "quality": metrics,
                 "svg": path.read_text(encoding="utf-8"),
             })
         return {
