@@ -65,7 +65,7 @@ The server binds to loopback only. It does not expose a network listener to the 
 - Doors and windows are placed heuristically; door swings, furniture clearances, and detailed accessibility checks are not yet modeled.
 - Daylight potential, privacy, and circulation scores are explainable heuristics, not full daylight simulation or building-code compliance.
 - The GUI is not yet a freeform visual room editor or 3D preview.
-- Local zoning/building-code compliance, daylight simulation, structural design, furniture placement, and Unreal integration are not provided.
+- The SVG includes first-pass illustrative furniture symbols selected by room role; editable furniture objects, collision-aware placement, door-swing clearance, and Unreal integration are not yet provided.
 
 The Lab is a development tool. Its output is not a construction drawing or proof of regulatory compliance.
 
