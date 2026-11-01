@@ -677,4 +677,90 @@ bool export_geometry_svg(const BuildingGeometry2D& geometry,
     }
     return true;
 }
+
+bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
+                              const WallTopology2D& topology,
+                              const std::string& output_path,std::string* error) {
+    const auto fail=[&](const std::string& message){if(error)*error=message;return false;};
+    if(geometry.width_m<=0.0||geometry.depth_m<=0.0||geometry.rooms.empty()||
+       topology.walls.empty()||output_path.empty())
+        return fail("Wall SVG export requires a valid building geometry, wall topology, and output path.");
+    if(!topology.valid)
+        return fail("Cannot export an invalid wall topology.");
+    constexpr double margin=28.0,scale=52.0;
+    const double width=geometry.width_m*scale+margin*2.0;
+    const double height=geometry.depth_m*scale+margin*2.0;
+    std::ostringstream svg;
+    svg<<"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\""<<width
+       <<"\" height=\""<<height<<"\" viewBox=\"0 0 "<<width<<" "<<height<<"\">\n"
+       <<"<rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n"
+       <<"<g transform=\"translate("<<margin<<","<<margin+geometry.depth_m*scale
+       <<") scale("<<scale<<","<<-scale<<")\">\n";
+    for(const auto& room:geometry.rooms) {
+        svg<<"<g fill=\""<<room_color(room.id)<<"\" stroke=\"none\" fill-rule=\"evenodd\">\n";
+        for(const auto& ring:room.rings) {
+            if(ring.vertices.size()<3U)continue;
+            svg<<"<path d=\"M "<<ring.vertices.front().x<<" "<<ring.vertices.front().y;
+            for(std::size_t i=1;i<ring.vertices.size();++i)
+                svg<<" L "<<ring.vertices[i].x<<" "<<ring.vertices[i].y;
+            svg<<" Z\"/>\n";
+        }
+        svg<<"</g>\n";
+    }
+    for(const auto& wall:topology.walls)
+        svg<<"<line x1=\""<<wall.start.x<<"\" y1=\""<<wall.start.y
+           <<"\" x2=\""<<wall.end.x<<"\" y2=\""<<wall.end.y
+           <<"\" stroke=\"#172033\" stroke-width=\"0.13\" stroke-linecap=\"square\"/>\n";
+    for(const auto& opening:topology.openings) {
+        const auto wall=std::find_if(topology.walls.begin(),topology.walls.end(),
+            [&](const BoundarySegment2D& item){return item.id==opening.wall_id;});
+        if(wall==topology.walls.end())continue;
+        if(opening.offset_m<0.0||opening.width_m<=0.0||
+           opening.offset_m+opening.width_m>wall->length_m+1e-6)
+            return fail("An opening lies outside its source wall.");
+        const double dx=(wall->end.x-wall->start.x)/wall->length_m;
+        const double dy=(wall->end.y-wall->start.y)/wall->length_m;
+        const Point2 a{wall->start.x+dx*opening.offset_m,
+                       wall->start.y+dy*opening.offset_m};
+        const Point2 b{wall->start.x+dx*(opening.offset_m+opening.width_m),
+                       wall->start.y+dy*(opening.offset_m+opening.width_m)};
+        const char* color=opening.kind==OpeningKind2D::Window?"#0284c7":
+                          opening.kind==OpeningKind2D::EntranceDoor?"#16a34a":
+                          opening.kind==OpeningKind2D::OpenPlan?"#7c3aed":"#d97706";
+        svg<<"<line x1=\""<<a.x<<"\" y1=\""<<a.y<<"\" x2=\""<<b.x
+           <<"\" y2=\""<<b.y<<"\" stroke=\"#ffffff\" stroke-width=\"0.25\"/>\n"
+           <<"<line x1=\""<<a.x<<"\" y1=\""<<a.y<<"\" x2=\""<<b.x
+           <<"\" y2=\""<<b.y<<"\" stroke=\""<<color
+           <<"\" stroke-width=\"0.09\" stroke-linecap=\"round\"/>\n";
+    }
+    if(geometry.entrance.defined)
+        svg<<"<line x1=\""<<geometry.entrance.start_x<<"\" y1=\""<<geometry.entrance.start_y
+           <<"\" x2=\""<<geometry.entrance.end_x<<"\" y2=\""<<geometry.entrance.end_y
+           <<"\" stroke=\"#16a34a\" stroke-width=\"0.07\"/>\n";
+    for(const auto& room:geometry.rooms) {
+        double cx=0.0,cy=0.0;std::size_t count=0;
+        for(const auto& ring:room.rings)for(const auto& point:ring.vertices) {
+            cx+=point.x;cy+=point.y;++count;
+        }
+        if(count==0U)continue;
+        cx/=static_cast<double>(count);cy/=static_cast<double>(count);
+        svg<<"<text x=\""<<cx<<"\" y=\""<<cy
+           <<"\" font-family=\"Arial,sans-serif\" font-size=\"0.30\" text-anchor=\"middle\" "
+           <<"fill=\"#17202a\" stroke=\"#ffffff\" stroke-width=\"0.025\" paint-order=\"stroke\">";
+        append_svg_escape(svg,room.name);
+        svg<<"</text>\n";
+    }
+    svg<<"</g>\n"
+       <<"<g font-family=\"Arial,sans-serif\" font-size=\"11\" fill=\"#334155\">"
+       <<"<text x=\""<<margin<<"\" y=\""<<height-8<<"\" >"
+       <<geometry.width_m<<" m x "<<geometry.depth_m<<" m · Walls / openings</text>"
+       <<"<text x=\""<<margin<<"\" y=\"14\">"
+       <<"Dark: wall · Green: entrance · Amber: interior door · Blue: window · Purple: open plan</text>"
+       <<"</g></svg>\n";
+    std::ofstream file(output_path,std::ios::binary);
+    if(!file)return fail("Could not open wall topology SVG output path: "+output_path);
+    file<<svg.str();
+    if(!file.good())return fail("Failed while writing wall topology SVG output: "+output_path);
+    return true;
+}
 } // namespace mbf
