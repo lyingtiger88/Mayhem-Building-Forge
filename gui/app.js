@@ -78,7 +78,13 @@ function mountFurnitureEditor(card,preview,svgText,filename){
   return items.some(other=>{if(other===el||other.dataset.roomId!==el.dataset.roomId)return false;const b=bounds(other),g=.18;
    return a.x-g<b.x+b.w+g&&a.x+a.w+g>b.x-g&&a.y-g<b.y+b.h+g&&a.y+a.h+g>b.y-g;});
  };
- const point=e=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
+ const furnitureLayer=svg.querySelector("#FURNITURE");
+ const point=e=>{
+  const matrix=furnitureLayer.getScreenCTM();
+  if(!matrix)throw new Error("Furniture coordinate transform is unavailable");
+  const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;
+  return p.matrixTransform(matrix.inverse());
+ };
  const select=el=>{if(selected)selected.style.filter="";selected=el;if(selected)selected.style.filter="drop-shadow(0 0 3px #f59e0b)";rotate.disabled=!selected;};
  edit.addEventListener("click",()=>{enabled=!enabled;edit.textContent=enabled?"Finish editing":"Enable furniture editing";status.textContent=enabled?"Drag furniture smoothly; zoom or expand for precision.":"Editing paused.";svg.style.cursor=enabled?"grab":"default";});
  rotate.addEventListener("click",()=>{if(!selected)return;const old=selected.dataset.rotation;selected.dataset.rotation=String((Number(old||0)+90)%360);setTransform(selected);if(collision(selected)){selected.dataset.rotation=old;setTransform(selected);status.textContent="Rotation rejected: furniture clearance would overlap.";}});
@@ -88,19 +94,21 @@ function mountFurnitureEditor(card,preview,svgText,filename){
  download.addEventListener("click",()=>{const output=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([output],{type:"image/svg+xml"}));const a=document.createElement("a");a.href=url;a.download=filename.replace(".svg","-edited.svg");a.click();URL.revokeObjectURL(url);});
  items.forEach(el=>{el.style.cursor="grab";el.addEventListener("pointerdown",e=>{
   if(!enabled||el.dataset.movable!=="true")return;e.preventDefault();select(el);
-  const p=point(e);drag={el,pointerId:e.pointerId,grabX:p.x-Number(el.dataset.x),grabY:p.y-Number(el.dataset.y),x:Number(el.dataset.x),y:Number(el.dataset.y)};
-  svg.setPointerCapture(e.pointerId);el.style.cursor="grabbing";svg.style.cursor="grabbing";
+  const p=point(e);drag={el,pointerId:e.pointerId,startX:p.x,startY:p.y,x:Number(el.dataset.x),y:Number(el.dataset.y)};
+  el.setPointerCapture(e.pointerId);el.style.cursor="grabbing";svg.style.cursor="grabbing";
  });});
  svg.addEventListener("pointermove",e=>{
   if(!drag||e.pointerId!==drag.pointerId)return;
   const p=point(e),el=drag.el;
-  el.dataset.x=String(p.x-drag.grabX);el.dataset.y=String(p.y-drag.grabY);setTransform(el);
+  el.dataset.x=String(drag.x+(p.x-drag.startX));
+  el.dataset.y=String(drag.y+(p.y-drag.startY));
+  setTransform(el);
  });
  const finishDrag=(e,cancelled=false)=>{
   if(!drag||e.pointerId!==drag.pointerId)return;const el=drag.el;
   if(cancelled||collision(el)){el.dataset.x=String(drag.x);el.dataset.y=String(drag.y);setTransform(el);status.textContent=cancelled?"Move cancelled.":"Move rejected: overlaps another furniture object.";}
   else status.textContent="Furniture position updated.";
-  el.style.cursor="grab";svg.style.cursor=enabled?"grab":"default";if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);drag=null;
+  el.style.cursor="grab";svg.style.cursor=enabled?"grab":"default";if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);drag=null;
  };
  svg.addEventListener("pointerup",e=>finishDrag(e));svg.addEventListener("pointercancel",e=>finishDrag(e,true));
  svg.addEventListener("wheel",e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();applyZoom(zoom*(e.deltaY<0?1.12:1/1.12));},{passive:false});
