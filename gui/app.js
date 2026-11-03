@@ -81,7 +81,7 @@ function mountFurnitureEditor(card,preview,svgText,filename){
  const furnitureLayer=svg.querySelector("#FURNITURE");
  const roomBoundaries=new Map();
  svg.querySelectorAll("#ROOM_BOUNDARIES [data-room-boundary-id]").forEach(group=>{
-  const rings=[...group.querySelectorAll("polygon")].map(poly=>poly.getAttribute("points").trim().split(/\\s+/).map(pair=>pair.split(",").map(Number)));
+  const rings=[...group.querySelectorAll("polygon")].map(poly=>poly.getAttribute("points").trim().split(/\s+/).map(pair=>pair.split(",").map(Number)));
   roomBoundaries.set(group.dataset.roomBoundaryId,rings);
  });
  const pointInRing=(p,ring)=>{
