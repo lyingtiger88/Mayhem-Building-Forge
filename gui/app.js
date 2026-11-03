@@ -79,6 +79,26 @@ function mountFurnitureEditor(card,preview,svgText,filename){
    return a.x-g<b.x+b.w+g&&a.x+a.w+g>b.x-g&&a.y-g<b.y+b.h+g&&a.y+a.h+g>b.y-g;});
  };
  const furnitureLayer=svg.querySelector("#FURNITURE");
+ const roomBoundaries=new Map();
+ svg.querySelectorAll("#ROOM_BOUNDARIES [data-room-boundary-id]").forEach(group=>{
+  const rings=[...group.querySelectorAll("polygon")].map(poly=>poly.getAttribute("points").trim().split(/\\s+/).map(pair=>pair.split(",").map(Number)));
+  roomBoundaries.set(group.dataset.roomBoundaryId,rings);
+ });
+ const pointInRing=(p,ring)=>{
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+   const a=ring[i],b=ring[j];
+   if(((a[1]>p.y)!==(b[1]>p.y))&&(p.x<(b[0]-a[0])*(p.y-a[1])/(b[1]-a[1])+a[0]))inside=!inside;
+  }
+  return inside;
+ };
+ const withinRoom=(el,x=Number(el.dataset.x),y=Number(el.dataset.y),rotation=Number(el.dataset.rotation||0))=>{
+  const rings=roomBoundaries.get(el.dataset.roomId);if(!rings||!rings.length)return false;
+  const w=Number(el.dataset.width),h=Number(el.dataset.depth),cx=x+w/2,cy=y+h/2,rad=rotation*Math.PI/180;
+  const local=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2],[0,-h/2],[w/2,0],[0,h/2],[-w/2,0],[0,0]];
+  const samples=local.map(([lx,ly])=>({x:cx+lx*Math.cos(rad)-ly*Math.sin(rad),y:cy+lx*Math.sin(rad)+ly*Math.cos(rad)}));
+  return samples.every(p=>rings.reduce((inside,ring)=>inside!==pointInRing(p,ring),false));
+ };
  const point=e=>{
   const matrix=furnitureLayer.getScreenCTM();
   if(!matrix)throw new Error("Furniture coordinate transform is unavailable");
@@ -87,7 +107,7 @@ function mountFurnitureEditor(card,preview,svgText,filename){
  };
  const select=el=>{if(selected)selected.style.filter="";selected=el;if(selected)selected.style.filter="drop-shadow(0 0 3px #f59e0b)";rotate.disabled=!selected;};
  edit.addEventListener("click",()=>{enabled=!enabled;edit.textContent=enabled?"Finish editing":"Enable furniture editing";status.textContent=enabled?"Drag furniture smoothly; zoom or expand for precision.":"Editing paused.";svg.style.cursor=enabled?"grab":"default";});
- rotate.addEventListener("click",()=>{if(!selected)return;const old=selected.dataset.rotation;selected.dataset.rotation=String((Number(old||0)+90)%360);setTransform(selected);if(collision(selected)){selected.dataset.rotation=old;setTransform(selected);status.textContent="Rotation rejected: furniture clearance would overlap.";}});
+ rotate.addEventListener("click",()=>{if(!selected)return;const old=selected.dataset.rotation;selected.dataset.rotation=String((Number(old||0)+90)%360);setTransform(selected);if(!withinRoom(selected)||collision(selected)){selected.dataset.rotation=old;setTransform(selected);status.textContent="Rotation rejected: object would cross its room boundary or overlap another object.";}else status.textContent="Furniture rotated 90°.";});
  zoomIn.addEventListener("click",()=>applyZoom(zoom*1.2));zoomOut.addEventListener("click",()=>applyZoom(zoom/1.2));fit.addEventListener("click",()=>applyZoom(1));
  fullscreen.addEventListener("click",()=>{const open=!card.classList.contains("furniture-editor-fullscreen");card.classList.toggle("furniture-editor-fullscreen",open);document.body.classList.toggle("furniture-editor-open",open);fullscreen.textContent=open?"Close expanded editor":"Expand editor";if(open)applyZoom(1);});
  reset.addEventListener("click",()=>{items.forEach((el,i)=>{el.dataset.x=initial[i].x;el.dataset.y=initial[i].y;el.dataset.rotation=initial[i].rotation;setTransform(el);});status.textContent="Original generated layout restored.";});
@@ -99,14 +119,18 @@ function mountFurnitureEditor(card,preview,svgText,filename){
  });});
  svg.addEventListener("pointermove",e=>{
   if(!drag||e.pointerId!==drag.pointerId)return;
-  const p=point(e),el=drag.el;
-  el.dataset.x=String(drag.x+(p.x-drag.startX));
-  el.dataset.y=String(drag.y+(p.y-drag.startY));
-  setTransform(el);
+  const p=point(e),el=drag.el,previousX=el.dataset.x,previousY=el.dataset.y;
+  const nextX=drag.x+(p.x-drag.startX),nextY=drag.y+(p.y-drag.startY);
+  el.dataset.x=String(nextX);el.dataset.y=String(nextY);
+  if(!withinRoom(el)||collision(el)){
+   el.dataset.x=previousX;el.dataset.y=previousY;
+   status.textContent=!withinRoom(el,nextX,nextY)?"Movement limited to the current room.":"Movement blocked by another furniture object.";
+  }else{setTransform(el);status.textContent="Furniture position updated.";}
+
  });
  const finishDrag=(e,cancelled=false)=>{
   if(!drag||e.pointerId!==drag.pointerId)return;const el=drag.el;
-  if(cancelled||collision(el)){el.dataset.x=String(drag.x);el.dataset.y=String(drag.y);setTransform(el);status.textContent=cancelled?"Move cancelled.":"Move rejected: overlaps another furniture object.";}
+  if(cancelled||!withinRoom(el)||collision(el)){el.dataset.x=String(drag.x);el.dataset.y=String(drag.y);setTransform(el);status.textContent=cancelled?"Move cancelled.":"Move rejected: furniture must stay inside its room without overlaps.";}
   else status.textContent="Furniture position updated.";
   el.style.cursor="grab";svg.style.cursor=enabled?"grab":"default";if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);drag=null;
  };
