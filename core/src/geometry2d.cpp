@@ -783,6 +783,19 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         }
         svg<<"</g>\n";
     }
+    // Export exact room rings as hidden geometry metadata for the interactive editor.
+    svg<<"<g id=\"ROOM_BOUNDARIES\" visibility=\"hidden\" pointer-events=\"none\">\\n";
+    for(const auto& room:geometry.rooms) {
+        svg<<"<g data-room-boundary-id=\""<<room.id<<"\">\\n";
+        for(const auto& ring:room.rings) {
+            if(ring.vertices.size()<3U)continue;
+            svg<<"<polygon points=\"";
+            for(const auto& point:ring.vertices)svg<<point.x<<","<<point.y<<" ";
+            svg<<"\"/>\\n";
+        }
+        svg<<"</g>\\n";
+    }
+    svg<<"</g>\\n";
     // Render the typed, validated furniture layout produced by the placement engine.
     const auto furniture=generate_furniture_layout(geometry);
     if(!furniture.valid)return fail("Furniture layout failed geometric validation.");
