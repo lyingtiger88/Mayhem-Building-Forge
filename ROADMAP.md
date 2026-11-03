@@ -65,6 +65,7 @@ The local browser-based Parametric Lab is an implemented developer test bench, n
 - [x] Add deterministic room-aware furniture placement with polygon-boundary and inter-object clearance validation.
 - [x] Render furniture entities as individually identifiable SVG groups with editable transform metadata.
 - [x] Add local GUI editing: select, drag, rotate by 90 degrees, reset generated positions, and export edited SVG.
+- [x] Export exact room polygon rings and constrain interactive furniture movement/rotation to the owning room; reject collisions with other furniture.
 - [ ] Persist edited furniture layouts back into versioned Building Brief/project data and the native generator.
 - [ ] Validate furniture against door swings, window access, and continuous circulation paths; add turning-space checks.
 - [x] Add a first residential topology profile with hard adjacency constraints, a south-side entrance, and preliminary room-to-room access links.
