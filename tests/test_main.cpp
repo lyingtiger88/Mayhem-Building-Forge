@@ -379,7 +379,7 @@ void topology_to_geometry_solver(){
        "architectural SVG exports room polygon metadata for furniture editing");
    req(svg_text.find("data-room-boundary-id")!=std::string::npos,
        "each room boundary has a stable room identifier");
-   req(svg_text.find("data-opening-kind=\\"entrance-door\\"")!=std::string::npos,
+   req(svg_text.find("data-opening-kind=\"entrance-door\"")!=std::string::npos,
        "architectural SVG identifies the exterior entrance door");
    req(svg_text.find("DOOR_SWINGS")!=std::string::npos,
        "architectural SVG renders door leaves and swing arcs");
