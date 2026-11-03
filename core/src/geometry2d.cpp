@@ -871,6 +871,7 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         svg<<"<line x1=\""<<wall.start.x<<"\" y1=\""<<wall.start.y
            <<"\" x2=\""<<wall.end.x<<"\" y2=\""<<wall.end.y
            <<"\" stroke=\"#172033\" stroke-width=\"0.13\" stroke-linecap=\"square\"/>\n";
+    svg<<"<g id=\"DOOR_SWINGS\" fill=\"none\" stroke-linecap=\"round\">\n";
     for(const auto& opening:topology.openings) {
         const auto wall=std::find_if(topology.walls.begin(),topology.walls.end(),
             [&](const BoundarySegment2D& item){return item.id==opening.wall_id;});
@@ -887,12 +888,45 @@ bool export_wall_topology_svg(const BuildingGeometry2D& geometry,
         const char* color=opening.kind==OpeningKind2D::Window?"#0284c7":
                           opening.kind==OpeningKind2D::EntranceDoor?"#16a34a":
                           opening.kind==OpeningKind2D::OpenPlan?"#7c3aed":"#d97706";
+        svg<<"<g data-opening-id=\""<<opening.id<<"\" data-opening-kind=\""
+           <<(opening.kind==OpeningKind2D::EntranceDoor?"entrance-door":
+              opening.kind==OpeningKind2D::InteriorDoor?"interior-door":
+              opening.kind==OpeningKind2D::Window?"window":"open-plan")<<"\">\n";
         svg<<"<line x1=\""<<a.x<<"\" y1=\""<<a.y<<"\" x2=\""<<b.x
            <<"\" y2=\""<<b.y<<"\" stroke=\"#ffffff\" stroke-width=\"0.25\"/>\n"
            <<"<line x1=\""<<a.x<<"\" y1=\""<<a.y<<"\" x2=\""<<b.x
            <<"\" y2=\""<<b.y<<"\" stroke=\""<<color
            <<"\" stroke-width=\"0.09\" stroke-linecap=\"round\"/>\n";
+        if(opening.kind==OpeningKind2D::EntranceDoor||opening.kind==OpeningKind2D::InteriorDoor) {
+            Point2 center{};
+            const auto room=std::find_if(geometry.rooms.begin(),geometry.rooms.end(),
+                [&](const RoomGeometry2D& item){return item.id==opening.room_a;});
+            if(room!=geometry.rooms.end()) {
+                std::size_t count=0;
+                for(const auto& ring:room->rings)for(const auto& point:ring.vertices) {
+                    center.x+=point.x;center.y+=point.y;++count;
+                }
+                if(count>0U){center.x/=static_cast<double>(count);center.y/=static_cast<double>(count);}
+            }
+            const Point2 midpoint{(a.x+b.x)*0.5,(a.y+b.y)*0.5};
+            const double nx=-dy,ny=dx;
+            const double side=(center.x-midpoint.x)*nx+(center.y-midpoint.y)*ny;
+            const double inward=side>=0.0?1.0:-1.0;
+            const Point2 leaf_end{a.x+nx*inward*opening.width_m,
+                                  a.y+ny*inward*opening.width_m};
+            const int sweep=(dx*(ny*inward)-dy*(nx*inward))>=0.0?1:0;
+            svg<<"<line x1=\""<<a.x<<"\" y1=\""<<a.y<<"\" x2=\""
+               <<leaf_end.x<<"\" y2=\""<<leaf_end.y
+               <<"\" stroke=\"#26364b\" stroke-width=\"0.075\"/>\n"
+               <<"<path d=\"M "<<b.x<<" "<<b.y<<" A "<<opening.width_m<<" "
+               <<opening.width_m<<" 0 0 "<<sweep<<" "<<leaf_end.x<<" "<<leaf_end.y
+               <<"\" stroke=\"#64748b\" stroke-width=\"0.035\" stroke-dasharray=\"0.08 0.06\"/>\n"
+               <<"<circle cx=\""<<leaf_end.x<<"\" cy=\""<<leaf_end.y
+               <<"\" r=\"0.045\" fill=\"#c69b55\" stroke=\"none\"/>\n";
+        }
+        svg<<"</g>\n";
     }
+    svg<<"</g>\n";
     if(geometry.entrance.defined)
         svg<<"<line x1=\""<<geometry.entrance.start_x<<"\" y1=\""<<geometry.entrance.start_y
            <<"\" x2=\""<<geometry.entrance.end_x<<"\" y2=\""<<geometry.entrance.end_y
