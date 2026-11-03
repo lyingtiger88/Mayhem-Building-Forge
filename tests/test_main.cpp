@@ -375,6 +375,10 @@ void topology_to_geometry_solver(){
    std::ifstream svg_input(wall_svg);
    const std::string svg_text((std::istreambuf_iterator<char>(svg_input)),
                                std::istreambuf_iterator<char>());
+   req(svg_text.find("ROOM_BOUNDARIES")!=std::string::npos,
+       "architectural SVG exports room polygon metadata for furniture editing");
+   req(svg_text.find("data-room-boundary-id")!=std::string::npos,
+       "each room boundary has a stable room identifier");
    req(svg_text.find("FURNITURE")!=std::string::npos,
        "architectural SVG includes a procedural furniture layer");
    req(svg_text.find("#f8f3e9")!=std::string::npos,
