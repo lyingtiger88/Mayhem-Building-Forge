@@ -95,7 +95,9 @@ function mountFurnitureEditor(card,preview,svgText,filename){
  const withinRoom=(el,x=Number(el.dataset.x),y=Number(el.dataset.y),rotation=Number(el.dataset.rotation||0))=>{
   const rings=roomBoundaries.get(el.dataset.roomId);if(!rings||!rings.length)return false;
   const w=Number(el.dataset.width),h=Number(el.dataset.depth),cx=x+w/2,cy=y+h/2,rad=rotation*Math.PI/180;
-  const local=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2],[0,-h/2],[w/2,0],[0,h/2],[-w/2,0],[0,0]];
+  const local=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2],
+   [-w/4,-h/2],[0,-h/2],[w/4,-h/2],[w/2,-h/4],[w/2,0],[w/2,h/4],
+   [w/4,h/2],[0,h/2],[-w/4,h/2],[-w/2,h/4],[-w/2,0],[-w/2,-h/4],[0,0]];
   const samples=local.map(([lx,ly])=>({x:cx+lx*Math.cos(rad)-ly*Math.sin(rad),y:cy+lx*Math.sin(rad)+ly*Math.cos(rad)}));
   return samples.every(p=>rings.reduce((inside,ring)=>inside!==pointInRing(p,ring),false));
  };
